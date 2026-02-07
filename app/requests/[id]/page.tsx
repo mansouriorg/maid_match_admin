@@ -1,5 +1,6 @@
 "use client";
 
+import { use } from "react"; // <--- 1. Import nécessaire
 import Sidebar from "@/components/Sidebar";
 import { mockRequests } from "@/lib/data";
 import { 
@@ -9,16 +10,19 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 
-// Props automatically passed by Next.js for dynamic routes
+// 2. Le type params devient une Promise
 interface PageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default function RequestDetailsPage({ params }: PageProps) {
-  // 1. Find the request in mock data
-  const request = mockRequests.find((r) => r.id === params.id);
+  // 3. On "déballe" la promesse avec use()
+  const { id } = use(params);
 
-  // 2. Handle "Not Found" case
+  // 4. On utilise l'ID récupéré
+  const request = mockRequests.find((r) => r.id === id);
+
+  // 5. Gestion "Non trouvé"
   if (!request) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500 font-sans">

@@ -4,15 +4,14 @@ import Sidebar from "@/components/Sidebar";
 import { mockRequests } from "@/lib/data";
 import { 
   Search, Bell, MapPin, Calendar, Clock, Phone, MoreHorizontal, 
-  CheckCircle2, XCircle, AlertCircle, SprayCan, Key, Shirt, Cat
+  CheckCircle2, XCircle, SprayCan, Key, Shirt, Cat
 } from "lucide-react";
+import Link from "next/link"; // <--- 1. Import de Link
 import { useState } from "react";
 
 export default function AdminDashboard() {
-  // Simple state to track interactions (optional for now)
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // Helper to color-code statuses
   const getStatusColor = (status: string) => {
     switch(status) {
       case 'confirmed': return 'bg-teal-100 text-teal-800 border-teal-200';
@@ -22,7 +21,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // Helper to render small icons for extras
   const getExtraIcon = (extra: string) => {
     switch(extra) {
       case 'ironing': return <Shirt className="h-3 w-3" />;
@@ -83,7 +81,12 @@ export default function AdminDashboard() {
             
             <div className="divide-y divide-slate-100">
               {mockRequests.map((req) => (
-                <div key={req.id} className="group flex items-center justify-between p-6 hover:bg-slate-50 transition-colors">
+                // 2. REMPLACEMENT DU DIV PAR LINK
+                <Link 
+                    href={`/requests/${req.id}`} 
+                    key={req.id} 
+                    className="group flex items-center justify-between p-6 hover:bg-slate-50 transition-colors cursor-pointer"
+                >
                   
                   {/* Left: Client Info */}
                   <div className="flex w-1/4 gap-4">
@@ -91,7 +94,7 @@ export default function AdminDashboard() {
                         {req.contact.name.substring(0,2)}
                      </div>
                      <div>
-                        <p className="font-bold text-slate-900">{req.contact.name}</p>
+                        <p className="font-bold text-slate-900 group-hover:text-teal-700 transition-colors">{req.contact.name}</p>
                         <div className="flex items-center gap-2 text-sm text-slate-500">
                            <Phone className="h-3 w-3" />
                            {req.contact.phone}
@@ -119,13 +122,11 @@ export default function AdminDashboard() {
                         <span className="truncate">{req.property.address}</span>
                      </div>
                      <div className="flex gap-2">
-                        {/* Alert: No Supplies */}
                         {!req.property.hasSupplies && (
                             <span className="inline-flex items-center gap-1 rounded border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700">
                                 <SprayCan className="h-3 w-3" /> Matériel requis
                             </span>
                         )}
-                        {/* Extras Icons */}
                         {req.property.extras.map(e => (
                              <span key={e} className="inline-flex items-center justify-center h-6 w-6 rounded bg-slate-100 text-slate-500" title={e}>
                                 {getExtraIcon(e)}
@@ -140,20 +141,32 @@ export default function AdminDashboard() {
                         {req.status}
                      </span>
                      
+                     {/* Quick Actions (Prevent default to stop opening page when clicking buttons) */}
                      <div className="flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                        <button className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-green-600 hover:bg-green-50 hover:border-green-300 transition-colors" title="Confirmer">
+                        <button 
+                            onClick={(e) => { e.preventDefault(); /* Ajoutez logique validation ici */ }}
+                            className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-green-600 hover:bg-green-50 hover:border-green-300 transition-colors" 
+                            title="Confirmer"
+                        >
                             <CheckCircle2 className="h-4 w-4" />
                         </button>
-                        <button className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors" title="Refuser">
+                        <button 
+                            onClick={(e) => { e.preventDefault(); /* Ajoutez logique refus ici */ }}
+                            className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors" 
+                            title="Refuser"
+                        >
                             <XCircle className="h-4 w-4" />
                         </button>
-                        <button className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors" title="Détails">
+                        <button 
+                            className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors" 
+                            title="Détails"
+                        >
                             <MoreHorizontal className="h-4 w-4" />
                         </button>
                      </div>
                   </div>
 
-                </div>
+                </Link>
               ))}
             </div>
             

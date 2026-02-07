@@ -22,15 +22,15 @@ export default function Sidebar() {
           Tableau de bord
         </Link>
         
+        {/* --- MISE À JOUR ICI (href="/planning") --- */}
         <Link 
-          href="#" 
+          href="/planning" 
           className="flex items-center gap-3 rounded-lg px-4 py-3 font-medium hover:bg-slate-50 hover:text-teal-600 transition-colors"
         >
           <CalendarDays className="h-5 w-5" />
           Planning
         </Link>
         
-        {/* Link to Staff Catalog */}
         <Link 
           href="/staff" 
           className="flex items-center gap-3 rounded-lg px-4 py-3 font-medium hover:bg-slate-50 hover:text-teal-600 transition-colors"
