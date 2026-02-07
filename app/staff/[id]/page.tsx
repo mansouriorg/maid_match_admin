@@ -1,5 +1,6 @@
 "use client";
 
+import { use } from "react"; // <--- 1. Import nécessaire
 import Sidebar from "@/components/Sidebar";
 import { mockStaff } from "@/lib/data";
 import { 
@@ -7,17 +8,20 @@ import {
   CalendarCheck, Download, CheckCircle2, Languages
 } from "lucide-react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 
+// 2. Le type params devient une Promise
 interface PageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default function StaffProfilePage({ params }: PageProps) {
-  // Find the staff member
-  const staff = mockStaff.find((s) => s.id === params.id);
+  // 3. On "déballe" la promesse avec use()
+  const { id } = use(params);
 
-  // Handle not found
+  // 4. On utilise l'ID récupéré
+  const staff = mockStaff.find((s) => s.id === id);
+
+  // Gestion d'erreur si l'intervenant n'existe pas
   if (!staff) {
     return (
         <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500 font-sans">
@@ -35,20 +39,21 @@ export default function StaffProfilePage({ params }: PageProps) {
       <Sidebar />
       <main className="ml-64 flex-1 p-8">
         
-        {/* Navigation */}
+        {/* Navigation Retour */}
         <Link href="/staff" className="mb-6 inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-teal-600 transition-colors">
             <ArrowLeft className="h-4 w-4" />
             Retour au catalogue
         </Link>
 
-        {/* Profile Header Card */}
+        {/* Carte En-tête (Cover & Photo) */}
         <div className="relative mb-8 overflow-hidden rounded-2xl bg-white shadow-sm border border-slate-200">
-            {/* Cover Background */}
+            {/* Fond coloré (Cover) */}
             <div className="h-32 bg-gradient-to-r from-teal-600 to-slate-700"></div>
             
             <div className="px-8 pb-8">
                 <div className="relative -mt-12 flex items-end justify-between">
                     <div className="flex items-end gap-6">
+                        {/* Avatar / Photo avec Initiales */}
                         <div className="flex h-24 w-24 items-center justify-center rounded-2xl border-4 border-white bg-slate-100 text-3xl font-bold text-slate-600 shadow-md">
                             {staff.photo}
                         </div>
@@ -57,6 +62,7 @@ export default function StaffProfilePage({ params }: PageProps) {
                             <p className="font-medium text-teal-600">{staff.role}</p>
                         </div>
                     </div>
+                    {/* Boutons d'action */}
                     <div className="flex gap-3 mb-1">
                         <button className="flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 font-bold text-slate-600 hover:bg-slate-50 transition-colors">
                             <Download className="h-4 w-4" />
@@ -72,10 +78,10 @@ export default function StaffProfilePage({ params }: PageProps) {
 
         <div className="grid grid-cols-3 gap-8">
             
-            {/* Left Column: Info & Stats */}
+            {/* --- COLONNE GAUCHE (Infos & Stats) --- */}
             <div className="col-span-1 space-y-6">
                 
-                {/* Contact Info */}
+                {/* Coordonnées */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h3 className="mb-4 font-bold text-slate-900">Coordonnées</h3>
                     <div className="space-y-4 text-sm">
@@ -94,7 +100,7 @@ export default function StaffProfilePage({ params }: PageProps) {
                     </div>
                 </div>
 
-                {/* Key Stats */}
+                {/* Indicateurs de Performance (KPIs) */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h3 className="mb-4 font-bold text-slate-900">Performance</h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -119,10 +125,10 @@ export default function StaffProfilePage({ params }: PageProps) {
 
             </div>
 
-            {/* Right Column: CV & Skills */}
+            {/* --- COLONNE DROITE (CV, Bio, Compétences) --- */}
             <div className="col-span-2 space-y-6">
                 
-                {/* Bio / About */}
+                {/* Biographie & Langues */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h3 className="mb-4 text-lg font-bold text-slate-900">À propos</h3>
                     <p className="text-slate-600 leading-relaxed">
@@ -140,7 +146,7 @@ export default function StaffProfilePage({ params }: PageProps) {
                     </div>
                 </div>
 
-                {/* Competencies */}
+                {/* Compétences (Tags) */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h3 className="mb-4 text-lg font-bold text-slate-900">Compétences & Spécialités</h3>
                     <div className="flex flex-wrap gap-3">
@@ -153,7 +159,7 @@ export default function StaffProfilePage({ params }: PageProps) {
                     </div>
                 </div>
 
-                {/* Availability Mockup */}
+                {/* Calendrier de Disponibilité (Simulé) */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-bold text-slate-900">Disponibilités cette semaine</h3>
@@ -162,9 +168,9 @@ export default function StaffProfilePage({ params }: PageProps) {
                     <div className="grid grid-cols-7 gap-2 text-center">
                         {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day, i) => (
                             <div key={day} className={`rounded-lg p-3 text-sm font-bold border ${
-                                i === 6 ? 'bg-slate-50 text-slate-400 border-slate-100' : // Sunday off
-                                i === 2 ? 'bg-orange-50 text-orange-700 border-orange-100' : // Wed busy
-                                'bg-white text-slate-700 border-teal-200' // Available
+                                i === 6 ? 'bg-slate-50 text-slate-400 border-slate-100' : // Dimanche repos
+                                i === 2 ? 'bg-orange-50 text-orange-700 border-orange-100' : // Mercredi occupé
+                                'bg-white text-slate-700 border-teal-200' // Disponible
                             }`}>
                                 {day}
                                 <div className={`mt-2 h-1.5 w-1.5 rounded-full mx-auto ${
