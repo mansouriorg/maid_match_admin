@@ -15,7 +15,7 @@ export default function Sidebar() {
       {/* Navigation Links */}
       <nav className="flex flex-col gap-2 p-4">
         <Link 
-          href="/" 
+          href="/dashboard" 
           className="flex items-center gap-3 rounded-lg bg-teal-50 px-4 py-3 font-medium text-teal-700 transition-colors hover:bg-teal-100"
         >
           <LayoutDashboard className="h-5 w-5" />
