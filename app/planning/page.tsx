@@ -1,26 +1,44 @@
 "use client";
 
 import Sidebar from "@/components/Sidebar";
-import { mockRequests, mockStaff } from "@/lib/data";
+import { api } from "@/lib/api";
 import { 
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
-  MapPin, Clock, MoreVertical, Plus, UserCircle 
+  MapPin, Clock, Plus, UserCircle, Loader2, AlertCircle 
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react"; // <--- Added useMemo
+import NewInterventionModal from "@/components/NewInterventionModal";
+
+// Types matching Backend Response
+interface ServiceRequest {
+  id: number;
+  startTime: string; 
+  durationHours: number;
+  customerName: string;
+  address: string;
+  hasSupplies: boolean;
+  status: string;
+  maid?: { fullName: string }; 
+}
 
 export default function PlanningPage() {
-  // Simuler la date actuelle (basée sur les mock data pour l'exemple)
-  const [currentDate, setCurrentDate] = useState(new Date("2023-10-30"));
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [requests, setRequests] = useState<ServiceRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Générer les 7 jours de la semaine affichée
-  const getDaysOfWeek = (date: Date) => {
+  // 1. Helper: Calculate Monday - Sunday
+  // Wrapped in useMemo to prevent infinite loop
+  const weekDays = useMemo(() => {
     const days = [];
-    const start = new Date(date);
-    // Reculer au Lundi précédent
+    const start = new Date(currentDate);
+    // Reset to previous Monday
     const day = start.getDay();
     const diff = start.getDate() - day + (day === 0 ? -6 : 1); 
     start.setDate(diff);
+    start.setHours(0, 0, 0, 0);
 
     for (let i = 0; i < 7; i++) {
       const d = new Date(start);
@@ -28,11 +46,50 @@ export default function PlanningPage() {
       days.push(d);
     }
     return days;
+  }, [currentDate]); // <--- Only recalculate if currentDate changes
+
+  const startOfWeek = weekDays[0];
+  const endOfWeek = weekDays[6];
+
+  // 2. Fetch Logic
+  // Dependencies are now stable thanks to useMemo above
+  const fetchPlanning = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.get('/service-requests', {
+        params: {
+          minDate: startOfWeek.toISOString(),
+          maxDate: new Date(endOfWeek.getTime() + 86400000).toISOString()
+        }
+      });
+      setRequests(response.data);
+    } catch (err) {
+      console.error("Planning Load Error:", err);
+      setError("Erreur chargement planning.");
+    } finally {
+      setLoading(false);
+    }
+  }, [startOfWeek, endOfWeek]); 
+
+  // 3. Initial Fetch
+  useEffect(() => {
+    fetchPlanning();
+  }, [fetchPlanning]); 
+
+  // Handlers
+  const prevWeek = () => {
+    const newDate = new Date(currentDate);
+    newDate.setDate(currentDate.getDate() - 7);
+    setCurrentDate(newDate);
   };
 
-  const weekDays = getDaysOfWeek(currentDate);
+  const nextWeek = () => {
+    const newDate = new Date(currentDate);
+    newDate.setDate(currentDate.getDate() + 7);
+    setCurrentDate(newDate);
+  };
 
-  // Helper pour formater la date (ex: "30 OCT")
   const formatDateHeader = (date: Date) => {
     return {
       dayName: date.toLocaleDateString("fr-FR", { weekday: "short" }),
@@ -41,10 +98,9 @@ export default function PlanningPage() {
     };
   };
 
-  // Trouver les jobs pour un jour donné
   const getJobsForDay = (date: Date) => {
-    return mockRequests.filter(req => {
-      const reqDate = new Date(req.schedule.startDate);
+    return requests.filter(req => {
+      const reqDate = new Date(req.startTime);
       return (
         reqDate.getDate() === date.getDate() &&
         reqDate.getMonth() === date.getMonth() &&
@@ -53,11 +109,8 @@ export default function PlanningPage() {
     });
   };
 
-  // Simuler l'assignation d'un staff (juste pour l'affichage visuel)
-  const getAssignedStaff = (reqId: string) => {
-    // Logique fictive : assigner un staff aléatoire basé sur l'ID de la commande
-    const index = reqId.charCodeAt(reqId.length - 1) % mockStaff.length;
-    return mockStaff[index];
+  const getInitials = (name?: string) => {
+      return name ? name.substring(0, 2).toUpperCase() : "??";
   };
 
   return (
@@ -65,46 +118,62 @@ export default function PlanningPage() {
       <Sidebar />
       <main className="ml-64 flex-1 flex flex-col h-screen overflow-hidden">
         
-        {/* --- Header du Planning --- */}
+        {/* --- Header --- */}
         <header className="flex h-20 flex-shrink-0 items-center justify-between border-b border-slate-200 bg-white px-8">
             <div className="flex items-center gap-4">
                 <h1 className="text-2xl font-bold text-slate-800">Planning</h1>
                 
-                {/* Contrôles de Navigation Date */}
+                {/* Navigation Controls */}
                 <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-1">
-                    <button className="rounded-md p-1 hover:bg-white hover:shadow-sm">
+                    <button onClick={prevWeek} className="rounded-md p-1 hover:bg-white hover:shadow-sm transition-all">
                         <ChevronLeft className="h-5 w-5 text-slate-500" />
                     </button>
-                    <div className="px-4 font-bold text-slate-700 flex items-center gap-2 text-sm">
+                    <div className="px-4 font-bold text-slate-700 flex items-center gap-2 text-sm min-w-[180px] justify-center">
                         <CalendarIcon className="h-4 w-4 text-teal-600" />
-                        Semaine 44, 2023
+                        {startOfWeek.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} 
+                        {" - "} 
+                        {endOfWeek.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </div>
-                    <button className="rounded-md p-1 hover:bg-white hover:shadow-sm">
+                    <button onClick={nextWeek} className="rounded-md p-1 hover:bg-white hover:shadow-sm transition-all">
                         <ChevronRight className="h-5 w-5 text-slate-500" />
                     </button>
                 </div>
+
+                {loading && <Loader2 className="h-5 w-5 animate-spin text-teal-600 ml-2" />}
             </div>
 
             <div className="flex gap-3">
-                <button className="flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-teal-700">
+                <button 
+                  onClick={() => setIsModalOpen(true)}
+                  className="flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-teal-700 transition-colors"
+                >
                     <Plus className="h-4 w-4" />
                     Nouvelle Intervention
                 </button>
             </div>
         </header>
 
-        {/* --- Grille Semainier --- */}
+        {/* --- Error State --- */}
+        {error && (
+            <div className="m-6 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-red-600 text-sm font-bold">
+                <AlertCircle className="h-4 w-4" /> {error}
+            </div>
+        )}
+
+        {/* --- Calendar Grid --- */}
         <div className="flex-1 overflow-x-auto overflow-y-hidden p-6">
             <div className="grid h-full grid-cols-7 gap-4 min-w-[1000px]">
                 
                 {weekDays.map((day, index) => {
                     const { dayName, dayNumber, month } = formatDateHeader(day);
-                    const isToday = day.getDate() === 30; // Simuler "Aujourd'hui" au 30 Octobre
+                    const today = new Date();
+                    const isToday = day.getDate() === today.getDate() && day.getMonth() === today.getMonth();
+                    
                     const jobs = getJobsForDay(day);
 
                     return (
                         <div key={index} className="flex flex-col h-full">
-                            {/* En-tête de colonne (Jour) */}
+                            {/* Column Header */}
                             <div className={`mb-4 flex flex-col items-center justify-center rounded-xl border p-3 text-center transition-colors ${
                                 isToday 
                                 ? 'bg-teal-600 text-white border-teal-600 shadow-lg shadow-teal-200' 
@@ -115,55 +184,65 @@ export default function PlanningPage() {
                                 <span className={`text-[10px] font-bold uppercase ${isToday ? 'text-teal-100' : 'text-slate-400'}`}>{month}</span>
                             </div>
 
-                            {/* Zone des cartes (Drag & Drop zone in future) */}
+                            {/* Jobs List */}
                             <div className="flex-1 space-y-3 overflow-y-auto rounded-xl bg-slate-100/50 p-2 border border-slate-200/50">
-                                {jobs.length === 0 && (
+                                {jobs.length === 0 && !loading && (
                                     <div className="flex h-full items-center justify-center opacity-30">
                                         <p className="text-xs font-bold text-slate-400">Aucune mission</p>
                                     </div>
                                 )}
 
-                                {jobs.map((job) => {
-                                    const staff = getAssignedStaff(job.id);
-                                    
-                                    return (
-                                        <Link 
-                                            href={`/requests/${job.id}`} 
-                                            key={job.id}
-                                            className="block rounded-lg border border-slate-200 bg-white p-3 shadow-sm hover:shadow-md hover:border-teal-300 transition-all cursor-pointer group"
-                                        >
-                                            {/* Heure */}
-                                            <div className="mb-2 flex items-center justify-between">
-                                                <div className="flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 group-hover:bg-teal-50 group-hover:text-teal-700">
-                                                    <Clock className="h-3 w-3" />
-                                                    {job.schedule.startTime}
-                                                </div>
-                                                {job.property.hasSupplies ? null : (
-                                                    <div className="h-2 w-2 rounded-full bg-orange-500" title="Matériel requis" />
-                                                )}
+                                {jobs.map((job) => (
+                                    <Link 
+                                        href={`/requests/${job.id}`} 
+                                        key={job.id}
+                                        className={`block rounded-lg border bg-white p-3 shadow-sm hover:shadow-md transition-all cursor-pointer group relative overflow-hidden ${
+                                            job.status === 'ASSIGNED' ? 'border-l-4 border-l-blue-500' : 
+                                            job.status === 'CONFIRMED' ? 'border-l-4 border-l-teal-500' : 
+                                            'border-slate-200'
+                                        }`}
+                                    >
+                                        <div className="mb-2 flex items-center justify-between">
+                                            <div className="flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 group-hover:bg-teal-50 group-hover:text-teal-700">
+                                                <Clock className="h-3 w-3" />
+                                                {new Date(job.startTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                                             </div>
+                                            {!job.hasSupplies && (
+                                                <div className="h-2 w-2 rounded-full bg-orange-500 ring-2 ring-white" title="Matériel requis" />
+                                            )}
+                                        </div>
 
-                                            {/* Info Client */}
-                                            <div className="mb-3">
-                                                <p className="font-bold text-sm text-slate-900 truncate">{job.contact.name}</p>
-                                                <div className="flex items-center gap-1 text-xs text-slate-500 truncate mt-0.5">
-                                                    <MapPin className="h-3 w-3 flex-shrink-0" />
-                                                    {job.property.address.split(',')[0]}
-                                                </div>
+                                        <div className="mb-3">
+                                            <p className="font-bold text-sm text-slate-900 truncate">{job.customerName}</p>
+                                            <div className="flex items-center gap-1 text-xs text-slate-500 truncate mt-0.5">
+                                                <MapPin className="h-3 w-3 flex-shrink-0" />
+                                                {job.address.split(',')[0]}
                                             </div>
+                                        </div>
 
-                                            {/* Staff Assigné */}
-                                            <div className="flex items-center gap-2 border-t border-slate-50 pt-2 mt-2">
-                                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-600">
-                                                    {staff.photo}
-                                                </div>
-                                                <span className="text-xs font-medium text-slate-600 truncate">
-                                                    {staff.name.split(' ')[0]}
-                                                </span>
-                                            </div>
-                                        </Link>
-                                    );
-                                })}
+                                        <div className="flex items-center gap-2 border-t border-slate-50 pt-2 mt-2">
+                                            {job.maid ? (
+                                                <>
+                                                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-700">
+                                                        {getInitials(job.maid.fullName)}
+                                                    </div>
+                                                    <span className="text-xs font-medium text-slate-700 truncate">
+                                                        {job.maid.fullName.split(' ')[0]}
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-400 border border-slate-200 border-dashed">
+                                                        <UserCircle className="h-4 w-4" />
+                                                    </div>
+                                                    <span className="text-xs font-bold text-orange-400 truncate italic">
+                                                        À assigner
+                                                    </span>
+                                                </>
+                                            )}
+                                        </div>
+                                    </Link>
+                                ))}
                             </div>
                         </div>
                     );
@@ -171,6 +250,13 @@ export default function PlanningPage() {
 
             </div>
         </div>
+        
+        {/* --- NEW INTERVENTION MODAL --- */}
+        <NewInterventionModal 
+            isOpen={isModalOpen} 
+            onClose={() => setIsModalOpen(false)} 
+            onSuccess={fetchPlanning} // Refresh the grid on success
+        />
 
       </main>
     </div>
