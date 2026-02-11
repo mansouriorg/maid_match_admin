@@ -1,178 +1,142 @@
 "use client";
 
-import Sidebar from "@/components/Sidebar";
-import { mockRequests } from "@/lib/data";
-import { 
-  Search, Bell, MapPin, Calendar, Clock, Phone, MoreHorizontal, 
-  CheckCircle2, XCircle, SprayCan, Key, Shirt, Cat
-} from "lucide-react";
-import Link from "next/link"; // <--- 1. Import de Link
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Sparkles, Lock, Mail, ArrowRight, Loader2, AlertCircle } from "lucide-react";
+import { api } from "@/lib/api"; // Import your Axios instance
 
-export default function AdminDashboard() {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+export default function LoginPage() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null); // State for error messages
+  
+  // State to capture inputs (PREFILLED WITH SEED DATA)
+  const [formData, setFormData] = useState({
+    email: "admin@maidmatch.com",    // Prefilled email
+    password: "SecurePassword123!"   // Prefilled password
+  });
 
-  const getStatusColor = (status: string) => {
-    switch(status) {
-      case 'confirmed': return 'bg-teal-100 text-teal-800 border-teal-200';
-      case 'pending': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-slate-100 text-slate-800';
-    }
-  };
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
 
-  const getExtraIcon = (extra: string) => {
-    switch(extra) {
-      case 'ironing': return <Shirt className="h-3 w-3" />;
-      case 'keys': return <Key className="h-3 w-3" />;
-      case 'pets': return <Cat className="h-3 w-3" />;
-      default: return null;
+    try {
+        // 1. Send Login Request to Backend
+        const response = await api.post("/auth/login", formData);
+        
+        // 2. Extract Token
+        const { accessToken, user } = response.data;
+
+        // 3. Store Token securely (Simulated persistence)
+        localStorage.setItem("adminToken", accessToken);
+        localStorage.setItem("adminUser", JSON.stringify(user));
+
+        // 4. Redirect to Dashboard
+        router.push("/dashboard"); 
+
+    } catch (err: any) {
+        console.error("Login Failed", err);
+        // Show specific error from backend or generic message
+        setError(err.response?.data?.message || "Identifiants invalides. Veuillez réessayer.");
+    } finally {
+        setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
-      <Sidebar />
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4 font-sans text-slate-900">
       
-      <main className="ml-64 flex-1">
-        {/* Top Header */}
-        <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-slate-200 bg-white/80 px-8 backdrop-blur-md">
-          <h1 className="text-2xl font-bold text-slate-800">Demandes Entrantes</h1>
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-              <input 
-                placeholder="Rechercher un client..." 
-                className="h-10 w-64 rounded-full border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
-              />
+      <div className="w-full max-w-md animate-in fade-in zoom-in duration-500">
+        
+        {/* Logo Section */}
+        <div className="mb-8 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-teal-700 text-white shadow-xl shadow-teal-200">
+                <Sparkles className="h-8 w-8" />
             </div>
-            <button className="relative rounded-full bg-slate-100 p-2 text-slate-600 hover:bg-slate-200 transition-colors">
-              <Bell className="h-5 w-5" />
-              <span className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
-            </button>
-          </div>
-        </header>
-
-        {/* Dashboard Content */}
-        <div className="p-8">
-          
-          {/* 1. Stats Cards */}
-          <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
-            <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-                <p className="text-sm font-bold uppercase text-slate-400">Demandes en attente</p>
-                <p className="mt-2 text-3xl font-bold text-slate-900">12</p>
-            </div>
-            <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-                <p className="text-sm font-bold uppercase text-slate-400">Revenu estimé (Mois)</p>
-                <p className="mt-2 text-3xl font-bold text-teal-600">4,250 €</p>
-            </div>
-            <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-                <p className="text-sm font-bold uppercase text-slate-400">Intervenants Actifs</p>
-                <p className="mt-2 text-3xl font-bold text-indigo-600">8</p>
-            </div>
-          </div>
-
-          {/* 2. Requests List */}
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-              <h2 className="font-bold text-lg text-slate-800">Dernières réservations</h2>
-              <button className="text-sm font-medium text-teal-600 hover:text-teal-700">Tout voir</button>
-            </div>
-            
-            <div className="divide-y divide-slate-100">
-              {mockRequests.map((req) => (
-                // 2. REMPLACEMENT DU DIV PAR LINK
-                <Link 
-                    href={`/requests/${req.id}`} 
-                    key={req.id} 
-                    className="group flex items-center justify-between p-6 hover:bg-slate-50 transition-colors cursor-pointer"
-                >
-                  
-                  {/* Left: Client Info */}
-                  <div className="flex w-1/4 gap-4">
-                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 font-bold text-slate-500 uppercase">
-                        {req.contact.name.substring(0,2)}
-                     </div>
-                     <div>
-                        <p className="font-bold text-slate-900 group-hover:text-teal-700 transition-colors">{req.contact.name}</p>
-                        <div className="flex items-center gap-2 text-sm text-slate-500">
-                           <Phone className="h-3 w-3" />
-                           {req.contact.phone}
-                        </div>
-                     </div>
-                  </div>
-
-                  {/* Middle: Schedule */}
-                  <div className="flex w-1/4 flex-col gap-1 text-sm">
-                     <div className="flex items-center gap-2 text-slate-700 font-medium">
-                        <Calendar className="h-4 w-4 text-teal-600" />
-                        {new Date(req.schedule.startDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} 
-                        {req.schedule.endDate && ` ➔ ${new Date(req.schedule.endDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`}
-                     </div>
-                     <div className="flex items-center gap-2 text-slate-500">
-                        <Clock className="h-4 w-4" />
-                        {req.schedule.startTime} - {req.schedule.endTime}
-                     </div>
-                  </div>
-
-                  {/* Middle: Address & Alerts */}
-                  <div className="hidden w-1/3 lg:block">
-                     <div className="flex items-center gap-2 text-sm text-slate-600 mb-2 truncate">
-                        <MapPin className="h-4 w-4 text-slate-400" />
-                        <span className="truncate">{req.property.address}</span>
-                     </div>
-                     <div className="flex gap-2">
-                        {!req.property.hasSupplies && (
-                            <span className="inline-flex items-center gap-1 rounded border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700">
-                                <SprayCan className="h-3 w-3" /> Matériel requis
-                            </span>
-                        )}
-                        {req.property.extras.map(e => (
-                             <span key={e} className="inline-flex items-center justify-center h-6 w-6 rounded bg-slate-100 text-slate-500" title={e}>
-                                {getExtraIcon(e)}
-                             </span>
-                        ))}
-                     </div>
-                  </div>
-
-                  {/* Right: Status & Quick Actions */}
-                  <div className="flex w-auto items-center justify-end gap-6">
-                     <span className={`rounded-full border px-3 py-1 text-xs font-bold uppercase ${getStatusColor(req.status)}`}>
-                        {req.status}
-                     </span>
-                     
-                     {/* Quick Actions (Prevent default to stop opening page when clicking buttons) */}
-                     <div className="flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                        <button 
-                            onClick={(e) => { e.preventDefault(); /* Ajoutez logique validation ici */ }}
-                            className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-green-600 hover:bg-green-50 hover:border-green-300 transition-colors" 
-                            title="Confirmer"
-                        >
-                            <CheckCircle2 className="h-4 w-4" />
-                        </button>
-                        <button 
-                            onClick={(e) => { e.preventDefault(); /* Ajoutez logique refus ici */ }}
-                            className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors" 
-                            title="Refuser"
-                        >
-                            <XCircle className="h-4 w-4" />
-                        </button>
-                        <button 
-                            className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors" 
-                            title="Détails"
-                        >
-                            <MoreHorizontal className="h-4 w-4" />
-                        </button>
-                     </div>
-                  </div>
-
-                </Link>
-              ))}
-            </div>
-            
-          </div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">MaidMatch Admin</h1>
+            <p className="mt-2 text-slate-500">Connectez-vous pour gérer les demandes.</p>
         </div>
-      </main>
+
+        {/* Login Card */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/50">
+            
+            {/* Error Message */}
+            {error && (
+                <div className="mb-6 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-600 animate-in fade-in slide-in-from-top-2">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    {error}
+                </div>
+            )}
+
+            <form onSubmit={handleLogin} className="space-y-5">
+                
+                {/* Email Input */}
+                <div className="space-y-1.5">
+                    <label className="text-sm font-bold text-slate-700">Adresse E-mail</label>
+                    <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+                        <input 
+                            type="email" 
+                            required
+                            placeholder="admin@maidmatch.com"
+                            value={formData.email}
+                            onChange={(e) => setFormData({...formData, email: e.target.value})}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-slate-900 outline-none transition-all focus:border-teal-500 focus:bg-white focus:ring-2 focus:ring-teal-100"
+                        />
+                    </div>
+                </div>
+
+                {/* Password Input */}
+                <div className="space-y-1.5">
+                    <label className="text-sm font-bold text-slate-700">Mot de passe</label>
+                    <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+                        <input 
+                            type="password" 
+                            required
+                            placeholder="••••••••"
+                            value={formData.password}
+                            onChange={(e) => setFormData({...formData, password: e.target.value})}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-slate-900 outline-none transition-all focus:border-teal-500 focus:bg-white focus:ring-2 focus:ring-teal-100"
+                        />
+                    </div>
+                </div>
+
+                {/* Submit Button */}
+                <button 
+                    type="submit" 
+                    disabled={isLoading}
+                    className="group flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 py-3 text-sm font-bold text-white shadow-lg shadow-teal-200 transition-all hover:bg-teal-700 hover:shadow-xl disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
+                >
+                    {isLoading ? (
+                        <>
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            Connexion...
+                        </>
+                    ) : (
+                        <>
+                            Se Connecter
+                            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                        </>
+                    )}
+                </button>
+
+            </form>
+
+            {/* Footer / Links */}
+            <div className="mt-6 text-center">
+                <a href="#" className="text-xs font-medium text-slate-400 hover:text-teal-600 transition-colors">
+                    Mot de passe oublié ?
+                </a>
+            </div>
+        </div>
+        
+        <p className="mt-8 text-center text-xs text-slate-400">
+            &copy; {new Date().getFullYear()} MaidMatch Inc. Accès restreint.
+        </p>
+
+      </div>
     </div>
   );
 }
