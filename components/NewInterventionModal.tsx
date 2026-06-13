@@ -35,7 +35,7 @@ export default function NewInterventionModal({ isOpen, onClose, onSuccess }: New
     time: "09:00",
     durationHours: 3,
     frequency: "one-time",
-    status: "CONFIRMED", // Admin creates confirmed by default
+    status: "CONFIRMED", // Default starting status
     maidId: "", // Optional
   });
 
@@ -62,22 +62,25 @@ export default function NewInterventionModal({ isOpen, onClose, onSuccess }: New
       const fullStartDate = new Date(`${formData.date}T${formData.time}:00.000Z`).toISOString();
 
       // 2. Destructure to REMOVE 'date' and 'time' from the payload
-      // This prevents the "property date should not exist" error from NestJS
-      const { date, time, ...rest } = formData;
+      const { date, time, status, ...rest } = formData;
 
-      // 3. Prepare Payload
+      // 3. Dynamic Status Logic: Automatically switch to ASSIGNED if a maid is selected
+      const finalStatus = formData.maidId ? "ASSIGNED" : "CONFIRMED";
+
+      // 4. Prepare Payload
       const payload = {
-        ...rest, // Contains all fields EXCEPT date and time
+        ...rest, 
         startTime: fullStartDate,
         rooms: Number(formData.rooms),
         bathrooms: Number(formData.bathrooms),
         durationHours: Number(formData.durationHours),
         hasSupplies: Boolean(formData.hasSupplies),
-        maidId: formData.maidId ? Number(formData.maidId) : undefined, // Send only if selected
-        extras: [], // Default empty extras
+        maidId: formData.maidId ? Number(formData.maidId) : undefined, 
+        status: finalStatus, // <--- Added dynamic status logic here
+        extras: [], 
       };
 
-      // 4. Send to Backend
+      // 5. Send to Backend
       await api.post("/service-requests", payload);
       
       alert("Intervention créée avec succès !");

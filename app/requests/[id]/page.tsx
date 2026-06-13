@@ -136,7 +136,8 @@ export default function RequestDetailsPage({ params }: PageProps) {
         {/* --- Header --- */}
         <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
-                <Link href="/" className="rounded-full bg-white p-2 text-slate-400 shadow-sm hover:text-teal-600 hover:shadow-md transition-all">
+                {/* UPDATED LINK HERE */}
+                <Link href="/dashboard" className="rounded-full bg-white p-2 text-slate-400 shadow-sm hover:text-teal-600 hover:shadow-md transition-all">
                     <ArrowLeft className="h-5 w-5" />
                 </Link>
                 <div>
