@@ -2,11 +2,19 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, CalendarDays, Users, Settings, Sparkles, LogOut } from "lucide-react";
+import { 
+  LayoutDashboard, 
+  CalendarDays, 
+  Users, 
+  Settings, 
+  Sparkles, 
+  LogOut,
+  ShieldAlert // <-- NOUVEL IMPORT
+} from "lucide-react";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter(); // Ajout du router pour la redirection
+  const router = useRouter(); 
 
   const getLinkStyle = (path: string) => {
     const isActive = pathname === path || pathname?.startsWith(`${path}/`);
@@ -18,15 +26,12 @@ export default function Sidebar() {
     }`;
   };
 
-  // Fonction de déconnexion pour supprimer le cookie et vider le stockage
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
     localStorage.removeItem("adminUser");
     
-    // On détruit le cookie en le faisant expirer dans le passé
     document.cookie = "adminToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     
-    // On redirige vers la page de login ("/")
     router.push("/");
   };
 
@@ -64,6 +69,15 @@ export default function Sidebar() {
         >
           <Users className="h-5 w-5" />
           Intervenants
+        </Link>
+
+        {/* NOUVEAU LIEN : Journal d'Audit */}
+        <Link 
+          href="/audit" 
+          className={getLinkStyle("/audit")}
+        >
+          <ShieldAlert className="h-5 w-5" />
+          Journal d'Audit
         </Link>
         
         <Link 
