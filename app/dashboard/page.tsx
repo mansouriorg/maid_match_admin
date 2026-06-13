@@ -1,6 +1,7 @@
 "use client";
 
 import Sidebar from "@/components/Sidebar";
+import DashboardStats from "@/components/DashboardStats"; // <-- 1. Import du nouveau composant
 import { api } from "@/lib/api"; 
 import { socket } from "@/lib/socket"; 
 import { 
@@ -249,6 +250,9 @@ export default function AdminDashboard() {
                 {error}
             </div>
           )}
+
+          {/* 🌟 2. NOUVEAU : CARTES DE STATISTIQUES 🌟 */}
+          <DashboardStats />
 
           {/* Requests List */}
           <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
