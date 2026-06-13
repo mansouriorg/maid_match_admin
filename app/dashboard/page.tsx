@@ -2,19 +2,20 @@
 
 import Sidebar from "@/components/Sidebar";
 import { api } from "@/lib/api"; 
+import { socket } from "@/lib/socket"; 
 import { 
   Search, Bell, MapPin, Calendar, Clock, Phone, MoreHorizontal, 
-  SprayCan, Key, Shirt, Cat, Loader2, AlertCircle
+  SprayCan, Key, Shirt, Cat, Loader2, AlertCircle, Check
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-// Define Types based on your API response
+// --- Types ---
 interface ServiceRequest {
   id: number;
   customerName: string;
   customerPhone: string;
-  startTime: string; // ISO String
+  startTime: string; 
   durationHours: number;
   address: string;
   propertyType: string;
@@ -25,18 +26,36 @@ interface ServiceRequest {
   maid?: { fullName: string };
 }
 
+// Type mis à jour pour correspondre au backend (Prisma)
+interface AppNotification {
+  id: number;
+  title: string;
+  message: string;
+  createdAt: string; 
+  isRead: boolean;   
+}
+
 export default function AdminDashboard() {
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // FETCH DATA
+  // Nouveaux états pour les notifications
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+
+  // FETCH DATA & LISTEN TO SOCKET
   useEffect(() => {
+    // 1. Chargement initial (Réservations ET Notifications en parallèle)
     const fetchData = async () => {
       try {
-        // Fetch ONLY the requests list
-        const response = await api.get('/service-requests');
-        setRequests(response.data);
+        const [reqResponse, notifResponse] = await Promise.all([
+          api.get('/service-requests'),
+          api.get('/notifications') // Appel à ta nouvelle route backend
+        ]);
+        
+        setRequests(reqResponse.data);
+        setNotifications(notifResponse.data);
       } catch (err) {
         console.error("Dashboard Load Error:", err);
         setError("Impossible de charger les données.");
@@ -46,9 +65,49 @@ export default function AdminDashboard() {
     };
 
     fetchData();
-  }, []);
 
-  // HELPER: Status Color
+    // 2. Écoute du WebSocket en temps réel
+    const handleNewIntervention = (payload: any) => {
+      // A. Mettre à jour la liste des réservations si les données sont là
+      if (payload.data) {
+        setRequests((prevRequests) => [payload.data, ...prevRequests]);
+      }
+
+      // B. Ajouter la nouvelle notification à la liste
+      const { data, ...newNotif } = payload;
+      setNotifications((prevNotifs) => [newNotif as AppNotification, ...prevNotifs]);
+    };
+
+    socket.on("new-intervention", handleNewIntervention);
+
+    // 3. Nettoyage
+    return () => {
+      socket.off("new-intervention", handleNewIntervention);
+    };
+  }, []); 
+
+  // --- Logique des notifications ---
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  const markAllAsRead = async () => {
+    try {
+      // Enregistrer dans la base de données via l'API
+      await api.patch('/notifications/mark-all-read');
+      // Mettre à jour l'interface visuellement
+      setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+    } catch (err) {
+      console.error("Erreur lors de la mise à jour des notifications", err);
+    }
+  };
+
+  const toggleNotifMenu = () => {
+    setIsNotifOpen(!isNotifOpen);
+    if (!isNotifOpen && unreadCount > 0) {
+      markAllAsRead();
+    }
+  };
+
+  // --- Helpers d'affichage ---
   const getStatusColor = (status: string) => {
     switch(status) {
       case 'CONFIRMED': return 'bg-teal-100 text-teal-800 border border-teal-200';
@@ -60,8 +119,8 @@ export default function AdminDashboard() {
     }
   };
 
-  // HELPER: Extra Icons
   const getExtraIcon = (extra: string) => {
+    if (!extra) return null;
     const key = extra.toLowerCase().trim();
     if (key.includes('repassage')) return <Shirt className="h-3 w-3" />;
     if (key.includes('clés')) return <Key className="h-3 w-3" />;
@@ -69,7 +128,6 @@ export default function AdminDashboard() {
     return null;
   };
 
-  // HELPER: Format Date
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR', { 
         day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' 
@@ -92,10 +150,68 @@ export default function AdminDashboard() {
                 className="h-10 w-64 rounded-full border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
               />
             </div>
-            <button className="relative rounded-full bg-slate-100 p-2 text-slate-600 hover:bg-slate-200 transition-colors">
-              <Bell className="h-5 w-5" />
-              <span className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
-            </button>
+
+            {/* --- ZONE DU BOUTON NOTIFICATION --- */}
+            <div className="relative">
+              <button 
+                onClick={toggleNotifMenu}
+                className="relative rounded-full bg-slate-100 p-2 text-slate-600 hover:bg-slate-200 transition-colors"
+              >
+                <Bell className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute right-0 top-0 flex h-3 w-3 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white ring-2 ring-white">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Le Menu Déroulant des Notifications */}
+              {isNotifOpen && (
+                <div className="absolute right-0 mt-2 w-80 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+                  <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
+                    <h3 className="font-bold text-slate-800 text-sm">Notifications</h3>
+                    {notifications.length > 0 && unreadCount > 0 && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation(); // Évite de fermer le menu lors du clic
+                          markAllAsRead();
+                        }}
+                        className="flex items-center gap-1 text-xs font-medium text-teal-600 hover:text-teal-700"
+                      >
+                        <Check className="h-3 w-3" /> Tout marquer lu
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="max-h-80 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-6 text-center text-sm text-slate-400">
+                        Aucune notification
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-slate-100">
+                        {notifications.map((notif) => (
+                          <div 
+                            key={notif.id} 
+                            className={`p-4 transition-colors hover:bg-slate-50 ${notif.isRead ? 'opacity-70' : 'bg-teal-50/30'}`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-sm font-bold text-slate-800">{notif.title}</p>
+                              <span className="text-[10px] text-slate-400 flex-shrink-0">
+                                {new Date(notif.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-xs text-slate-600 line-clamp-2">{notif.message}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* --- FIN ZONE NOTIFICATION --- */}
+
           </div>
         </header>
 
@@ -172,7 +288,7 @@ export default function AdminDashboard() {
                                     <SprayCan className="h-3 w-3" /> Matériel requis
                                 </span>
                             )}
-                            {req.extras.map(e => (
+                            {req.extras?.map(e => (
                                 <span key={e} className="inline-flex items-center justify-center h-6 w-6 rounded bg-slate-100 text-slate-500" title={e}>
                                     {getExtraIcon(e)}
                                 </span>

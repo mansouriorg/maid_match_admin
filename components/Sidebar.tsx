@@ -1,7 +1,24 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { LayoutDashboard, CalendarDays, Users, Settings, Sparkles, LogOut } from "lucide-react";
 
 export default function Sidebar() {
+  const pathname = usePathname();
+
+  // Helper function to check if the link is active and apply the correct Tailwind classes
+  const getLinkStyle = (path: string) => {
+    // Check if the current URL matches the link's path
+    const isActive = pathname === path || pathname?.startsWith(`${path}/`);
+    
+    return `flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${
+      isActive
+        ? "bg-teal-50 text-teal-700" // Active state
+        : "text-slate-600 hover:bg-slate-50 hover:text-teal-600" // Inactive state
+    }`;
+  };
+
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 border-r border-slate-200 bg-white text-slate-600">
       {/* Logo Area */}
@@ -16,16 +33,15 @@ export default function Sidebar() {
       <nav className="flex flex-col gap-2 p-4">
         <Link 
           href="/dashboard" 
-          className="flex items-center gap-3 rounded-lg bg-teal-50 px-4 py-3 font-medium text-teal-700 transition-colors hover:bg-teal-100"
+          className={getLinkStyle("/dashboard")}
         >
           <LayoutDashboard className="h-5 w-5" />
           Tableau de bord
         </Link>
         
-        {/* --- MISE À JOUR ICI (href="/planning") --- */}
         <Link 
           href="/planning" 
-          className="flex items-center gap-3 rounded-lg px-4 py-3 font-medium hover:bg-slate-50 hover:text-teal-600 transition-colors"
+          className={getLinkStyle("/planning")}
         >
           <CalendarDays className="h-5 w-5" />
           Planning
@@ -33,15 +49,15 @@ export default function Sidebar() {
         
         <Link 
           href="/staff" 
-          className="flex items-center gap-3 rounded-lg px-4 py-3 font-medium hover:bg-slate-50 hover:text-teal-600 transition-colors"
+          className={getLinkStyle("/staff")}
         >
           <Users className="h-5 w-5" />
           Intervenants
         </Link>
         
         <Link 
-          href="#" 
-          className="flex items-center gap-3 rounded-lg px-4 py-3 font-medium hover:bg-slate-50 hover:text-teal-600 transition-colors"
+          href="/settings" // Changed from "#" to "/settings" to make the active state work properly
+          className={getLinkStyle("/settings")}
         >
           <Settings className="h-5 w-5" />
           Paramètres
