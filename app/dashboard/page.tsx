@@ -8,6 +8,7 @@ import {
   SprayCan, Key, Shirt, Cat, Loader2, AlertCircle, Check
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 // --- Types ---
@@ -26,32 +27,32 @@ interface ServiceRequest {
   maid?: { fullName: string };
 }
 
-// Type mis à jour pour correspondre au backend (Prisma)
 interface AppNotification {
   id: number;
   title: string;
   message: string;
   createdAt: string; 
-  isRead: boolean;   
+  isRead: boolean;
+  serviceRequestId?: number; 
 }
 
 export default function AdminDashboard() {
+  const router = useRouter(); 
+
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Nouveaux états pour les notifications
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
 
   // FETCH DATA & LISTEN TO SOCKET
   useEffect(() => {
-    // 1. Chargement initial (Réservations ET Notifications en parallèle)
     const fetchData = async () => {
       try {
         const [reqResponse, notifResponse] = await Promise.all([
           api.get('/service-requests'),
-          api.get('/notifications') // Appel à ta nouvelle route backend
+          api.get('/notifications') 
         ]);
         
         setRequests(reqResponse.data);
@@ -66,21 +67,17 @@ export default function AdminDashboard() {
 
     fetchData();
 
-    // 2. Écoute du WebSocket en temps réel
     const handleNewIntervention = (payload: any) => {
-      // A. Mettre à jour la liste des réservations si les données sont là
       if (payload.data) {
         setRequests((prevRequests) => [payload.data, ...prevRequests]);
       }
 
-      // B. Ajouter la nouvelle notification à la liste
       const { data, ...newNotif } = payload;
       setNotifications((prevNotifs) => [newNotif as AppNotification, ...prevNotifs]);
     };
 
     socket.on("new-intervention", handleNewIntervention);
 
-    // 3. Nettoyage
     return () => {
       socket.off("new-intervention", handleNewIntervention);
     };
@@ -91,20 +88,46 @@ export default function AdminDashboard() {
 
   const markAllAsRead = async () => {
     try {
-      // Enregistrer dans la base de données via l'API
       await api.patch('/notifications/mark-all-read');
-      // Mettre à jour l'interface visuellement
       setNotifications(notifications.map(n => ({ ...n, isRead: true })));
     } catch (err) {
       console.error("Erreur lors de la mise à jour des notifications", err);
     }
   };
 
+  // 4. Gérer le clic sur une notification précise (Mis à jour avec Fallback)
+  const handleNotificationClick = async (notif: AppNotification) => {
+    // A. On log la notification pour comprendre ce qu'elle contient
+    console.log("Notification cliquée :", notif);
+
+    // B. On ferme le menu des notifications
+    setIsNotifOpen(false);
+
+    // C. Si elle n'est pas lue, on la marque comme lue
+    if (!notif.isRead) {
+      try {
+        await api.patch(`/notifications/${notif.id}/read`);
+        setNotifications(notifications.map(n => 
+          n.id === notif.id ? { ...n, isRead: true } : n
+        ));
+      } catch (err) {
+        console.error("Erreur read notif", err);
+      }
+    }
+
+    // D. Redirection avec solution de secours (Fallback)
+    if (notif.serviceRequestId) {
+      // S'il y a un ID (Nouvelles notifications), on va sur la page précise
+      router.push(`/requests/${notif.serviceRequestId}`);
+    } else {
+      // S'il n'y a pas d'ID (Anciennes notifications), on va sur la liste globale
+      console.warn("Ancienne notification sans ID. Redirection vers /requests");
+      router.push(`/requests`);
+    }
+  };
+
   const toggleNotifMenu = () => {
     setIsNotifOpen(!isNotifOpen);
-    if (!isNotifOpen && unreadCount > 0) {
-      markAllAsRead();
-    }
   };
 
   // --- Helpers d'affichage ---
@@ -173,7 +196,7 @@ export default function AdminDashboard() {
                     {notifications.length > 0 && unreadCount > 0 && (
                       <button 
                         onClick={(e) => {
-                          e.stopPropagation(); // Évite de fermer le menu lors du clic
+                          e.stopPropagation(); 
                           markAllAsRead();
                         }}
                         className="flex items-center gap-1 text-xs font-medium text-teal-600 hover:text-teal-700"
@@ -193,7 +216,8 @@ export default function AdminDashboard() {
                         {notifications.map((notif) => (
                           <div 
                             key={notif.id} 
-                            className={`p-4 transition-colors hover:bg-slate-50 ${notif.isRead ? 'opacity-70' : 'bg-teal-50/30'}`}
+                            onClick={() => handleNotificationClick(notif)} 
+                            className={`p-4 transition-colors hover:bg-slate-50 cursor-pointer ${notif.isRead ? 'opacity-70' : 'bg-teal-50/30'}`}
                           >
                             <div className="flex items-start justify-between gap-2">
                               <p className="text-sm font-bold text-slate-800">{notif.title}</p>
