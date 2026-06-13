@@ -1,22 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, CalendarDays, Users, Settings, Sparkles, LogOut } from "lucide-react";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter(); // Ajout du router pour la redirection
 
-  // Helper function to check if the link is active and apply the correct Tailwind classes
   const getLinkStyle = (path: string) => {
-    // Check if the current URL matches the link's path
     const isActive = pathname === path || pathname?.startsWith(`${path}/`);
     
     return `flex items-center gap-3 rounded-lg px-4 py-3 font-medium transition-colors ${
       isActive
-        ? "bg-teal-50 text-teal-700" // Active state
-        : "text-slate-600 hover:bg-slate-50 hover:text-teal-600" // Inactive state
+        ? "bg-teal-50 text-teal-700" 
+        : "text-slate-600 hover:bg-slate-50 hover:text-teal-600" 
     }`;
+  };
+
+  // Fonction de déconnexion pour supprimer le cookie et vider le stockage
+  const handleLogout = () => {
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminUser");
+    
+    // On détruit le cookie en le faisant expirer dans le passé
+    document.cookie = "adminToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    
+    // On redirige vers la page de login ("/")
+    router.push("/");
   };
 
   return (
@@ -56,7 +67,7 @@ export default function Sidebar() {
         </Link>
         
         <Link 
-          href="/settings" // Changed from "#" to "/settings" to make the active state work properly
+          href="/settings" 
           className={getLinkStyle("/settings")}
         >
           <Settings className="h-5 w-5" />
@@ -66,7 +77,10 @@ export default function Sidebar() {
 
       {/* Bottom Actions */}
       <div className="absolute bottom-8 left-0 w-full px-4">
-        <button className="flex w-full items-center gap-3 rounded-lg border border-slate-200 px-4 py-3 font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-colors">
+        <button 
+          onClick={handleLogout}
+          className="flex w-full items-center gap-3 rounded-lg border border-slate-200 px-4 py-3 font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-colors"
+        >
           <LogOut className="h-5 w-5" />
           Déconnexion
         </button>

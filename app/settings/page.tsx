@@ -1,7 +1,8 @@
 "use client";
 
 import Sidebar from "@/components/Sidebar";
-import { useState } from "react";
+import { api } from "@/lib/api"; 
+import { useEffect, useState } from "react";
 import { 
   User, 
   Building, 
@@ -17,17 +18,48 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("profile");
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isLoadingInitialData, setIsLoadingInitialData] = useState(true);
 
+  // État initial vide (sera rempli par la base de données)
   const [formData, setFormData] = useState({
-    firstName: "Mahmoud",
-    lastName: "Admin",
-    email: "admin@nobreach.com",
-    companyName: "No Breach Cleaning",
-    contactPhone: "+216 55 123 456",
+    firstName: "",
+    lastName: "",
+    email: "",
+    companyName: "",
+    contactPhone: "",
     defaultHourlyRate: "15",
     emailAlerts: true,
     smsAlerts: false,
   });
+
+  // État pour gérer les mots de passe dynamiquement
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+
+  // 1. Charger les paramètres depuis le backend au montage de la page
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const res = await api.get("/settings");
+        if (res.data) {
+          setFormData({
+            ...res.data,
+            // Convertir la valeur numérique en chaîne pour l'input HTML
+            defaultHourlyRate: res.data.defaultHourlyRate.toString(),
+          });
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement des paramètres:", error);
+      } finally {
+        setIsLoadingInitialData(false);
+      }
+    };
+
+    loadSettings();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -37,13 +69,52 @@ export default function SettingsPage() {
     }));
   };
 
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setPasswordData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // 2. Sauvegarder les modifications dans la base de données
   const handleSave = async () => {
     setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      // A. Sauvegarde des paramètres classiques
+      await api.patch("/settings", formData);
+
+      // B. Si l'utilisateur essaie de changer son mot de passe
+      if (passwordData.newPassword) {
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+          alert("Les mots de passe ne correspondent pas !");
+          setIsSaving(false);
+          return;
+        }
+        
+        // Appel à la nouvelle route Admin de NestJS
+        await api.patch("/admin/change-password", {
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword
+        });
+        
+        // Vider les champs après succès
+        setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      }
+
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000); 
-    }, 800);
+    } catch (error: any) {
+      console.error("Erreur lors de la sauvegarde:", error);
+      // Afficher l'erreur renvoyée par le backend (ex: mauvais mot de passe actuel)
+      if (error.response?.data?.message) {
+        alert(error.response.data.message);
+      } else {
+        alert("Une erreur est survenue lors de la sauvegarde.");
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const tabs = [
@@ -53,9 +124,20 @@ export default function SettingsPage() {
     { id: "security", label: "Sécurité", icon: Shield, desc: "Mots de passe et accès" },
   ];
 
-  // Les champs de saisie sont maintenant complètement blancs
   const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-4 focus:ring-teal-500/10 placeholder:text-slate-400";
   const labelClass = "text-sm font-semibold text-slate-700 mb-1.5 block";
+
+  // Écran de chargement esthétique en attendant les données
+  if (isLoadingInitialData) {
+    return (
+      <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
+        <Sidebar />
+        <main className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-10 w-10 animate-spin text-teal-600" />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
@@ -126,7 +208,7 @@ export default function SettingsPage() {
             <div className="flex-1">
               <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
                 
-                {/* Dynamic Header - Rendu blanc pur */}
+                {/* Dynamic Header */}
                 <div className="border-b border-slate-100 bg-white px-8 py-6">
                   <h2 className="text-lg font-bold text-slate-800">
                     {tabs.find(t => t.id === activeTab)?.label}
@@ -221,7 +303,6 @@ export default function SettingsPage() {
                   {activeTab === "notifications" && (
                     <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                       
-                      {/* Cartes rendues blanches au lieu de grises */}
                       <label className="flex items-center justify-between cursor-pointer rounded-xl border border-slate-200 bg-white p-5 hover:border-teal-500 transition-colors">
                         <div>
                           <p className="font-bold text-slate-800 text-sm">Alertes par Email</p>
@@ -252,16 +333,37 @@ export default function SettingsPage() {
                     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
                       <div>
                         <label className={labelClass}>Mot de passe actuel</label>
-                        <input type="password" placeholder="••••••••" className={inputClass} />
+                        <input 
+                          type="password" 
+                          name="currentPassword"
+                          value={passwordData.currentPassword}
+                          onChange={handlePasswordChange}
+                          placeholder="••••••••" 
+                          className={inputClass} 
+                        />
                       </div>
                       <div className="grid grid-cols-2 gap-5">
                         <div>
                           <label className={labelClass}>Nouveau mot de passe</label>
-                          <input type="password" placeholder="••••••••" className={inputClass} />
+                          <input 
+                            type="password" 
+                            name="newPassword"
+                            value={passwordData.newPassword}
+                            onChange={handlePasswordChange}
+                            placeholder="••••••••" 
+                            className={inputClass} 
+                          />
                         </div>
                         <div>
                           <label className={labelClass}>Confirmer le mot de passe</label>
-                          <input type="password" placeholder="••••••••" className={inputClass} />
+                          <input 
+                            type="password" 
+                            name="confirmPassword"
+                            value={passwordData.confirmPassword}
+                            onChange={handlePasswordChange}
+                            placeholder="••••••••" 
+                            className={inputClass} 
+                          />
                         </div>
                       </div>
                     </div>

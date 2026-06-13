@@ -3,17 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, Lock, Mail, ArrowRight, Loader2, AlertCircle } from "lucide-react";
-import { api } from "@/lib/api"; // Import your Axios instance
+import { api } from "@/lib/api"; 
 
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null); // State for error messages
+  const [error, setError] = useState<string | null>(null); 
   
-  // State to capture inputs (PREFILLED WITH SEED DATA)
   const [formData, setFormData] = useState({
-    email: "admin@maidmatch.com",    // Prefilled email
-    password: "SecurePassword123!"   // Prefilled password
+    email: "admin@maidmatch.com",    
+    password: "SecurePassword123!"   
   });
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -22,22 +21,22 @@ export default function LoginPage() {
     setError(null);
 
     try {
-        // 1. Send Login Request to Backend
         const response = await api.post("/auth/login", formData);
         
-        // 2. Extract Token
         const { accessToken, user } = response.data;
 
-        // 3. Store Token securely (Simulated persistence)
+        // 1. Sauvegarde classique
         localStorage.setItem("adminToken", accessToken);
         localStorage.setItem("adminUser", JSON.stringify(user));
 
-        // 4. Redirect to Dashboard
+        // 2. CRÉATION DU COOKIE (C'est ça qui débloque ton accès à /settings !)
+        document.cookie = `adminToken=${accessToken}; path=/; max-age=86400; SameSite=Lax`;
+
+        // 3. Redirection
         router.push("/dashboard"); 
 
     } catch (err: any) {
         console.error("Login Failed", err);
-        // Show specific error from backend or generic message
         setError(err.response?.data?.message || "Identifiants invalides. Veuillez réessayer.");
     } finally {
         setIsLoading(false);
@@ -71,7 +70,6 @@ export default function LoginPage() {
 
             <form onSubmit={handleLogin} className="space-y-5">
                 
-                {/* Email Input */}
                 <div className="space-y-1.5">
                     <label className="text-sm font-bold text-slate-700">Adresse E-mail</label>
                     <div className="relative">
@@ -87,7 +85,6 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                {/* Password Input */}
                 <div className="space-y-1.5">
                     <label className="text-sm font-bold text-slate-700">Mot de passe</label>
                     <div className="relative">
@@ -103,7 +100,6 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                {/* Submit Button */}
                 <button 
                     type="submit" 
                     disabled={isLoading}
@@ -123,13 +119,6 @@ export default function LoginPage() {
                 </button>
 
             </form>
-
-            {/* Footer / Links */}
-            <div className="mt-6 text-center">
-                <a href="#" className="text-xs font-medium text-slate-400 hover:text-teal-600 transition-colors">
-                    Mot de passe oublié ?
-                </a>
-            </div>
         </div>
         
         <p className="mt-8 text-center text-xs text-slate-400">
