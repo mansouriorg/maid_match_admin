@@ -12,6 +12,7 @@ import {
   AlertCircle
 } from "lucide-react";
 
+// --- MISE À JOUR DE L'INTERFACE ---
 interface AnalyticsData {
   totalRequests: number;
   statusCounts: {
@@ -22,6 +23,7 @@ interface AnalyticsData {
   };
   totalHours: number;
   estimatedRevenue: number;
+  collectedRevenue: number; // <-- Le nouveau champ ajouté au backend
 }
 
 export default function DashboardStats() {
@@ -66,9 +68,10 @@ export default function DashboardStats() {
 
   const statCards = [
     {
-      title: "Revenu Estimé",
-      value: `${stats.estimatedRevenue.toLocaleString()} TND`, // Ajuste la devise si besoin
-      subtitle: "Basé sur les heures planifiées",
+      // --- CARTE MISE À JOUR POUR LA FACTURATION ---
+      title: "Revenus Encaissés",
+      value: `${stats.collectedRevenue?.toLocaleString() || 0} TND`, 
+      subtitle: `Sur ${stats.estimatedRevenue?.toLocaleString() || 0} TND prévus`,
       icon: TrendingUp,
       color: "bg-emerald-500",
       lightColor: "bg-emerald-100 text-emerald-600",
