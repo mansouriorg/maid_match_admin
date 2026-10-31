@@ -1,15 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MaidMatch - admin
 
-## Admin login
+The back office of MaidMatch, a home-cleaning service in France. The team logs
+in to see booking requests as they arrive, assign a staff member, follow each
+intervention, and set the hourly rate.
 
-The login page (`app/page.tsx`) calls `POST /auth/login` on the API set in `NEXT_PUBLIC_API_URL`.
-The API answers `{ "access_token": "..." }`. The token is kept in local storage and in a cookie
-named `adminToken`, and `lib/api.ts` sends it as `Authorization: Bearer <token>` on every call.
+This is one of three projects that work together:
 
-- `proxy.ts` only checks that the cookie looks like a JWT that has not expired. It is a convenience
-  that sends visitors to the login page. It cannot check the signature, so the API must refuse
-  requests without a valid token.
-- When the API answers 401 "Unauthorized", the session is cleared and the login page is shown.
+| Project | Role | Main tools |
+| --- | --- | --- |
+| [maid_match](https://github.com/mansouriorg/maid_match) | Public booking site | Next.js 16, React 19, Tailwind CSS 4, Zustand |
+| [maid_match_admin](https://github.com/mansouriorg/maid_match_admin) | Back office for the team | Next.js 16, Socket.IO client |
+| [maid_match_serveur](https://github.com/mansouriorg/maid_match_serveur) | REST API and live notifications | NestJS 11, Prisma 7, PostgreSQL |
+
+## What it does
+
+- Dashboard: the latest requests, key numbers, and a live notification as soon
+  as a visitor sends a booking, without reloading the page.
+- Request page: the customer, the home, the days the customer is available,
+  the assigned staff member, the status, the price and the payment.
+- A weekly planning of the interventions.
+- Staff directory: profiles, skills, languages, and a form to add a person.
+- Audit log: which admin changed what, and when.
+- Settings: company details and the hourly rate used for the estimates.
+- Works on phones: a menu button replaces the sidebar on small screens.
+
+Not built yet, and shown disabled or hidden on purpose: saving internal notes
+on a request, downloading a CV, and the staff filters.
+
+## Login and session
+
+The login page (`app/page.tsx`) calls `POST /auth/login` on the API set in
+`NEXT_PUBLIC_API_URL`. The API answers `{ "access_token": "..." }`. The token is
+kept in local storage and in a cookie named `adminToken`, and `lib/api.ts` sends
+it as `Authorization: Bearer <token>` on every call.
+
+- `proxy.ts` only checks that the cookie looks like a JWT that has not expired.
+  It is a convenience that sends visitors to the login page. It cannot check the
+  signature, so the API refuses every request without a valid token.
+- When the API answers 401 "Unauthorized", the session is cleared and the login
+  page is shown.
 
 ## Times
 
@@ -19,40 +48,46 @@ admin is. The API stores times in UTC. The conversions are in `lib/time.ts`.
 ## Live notifications
 
 The admin opens a Socket.IO connection to the API only while a session is valid
-(`lib/socket.ts`, `components/SocketListener.tsx`). It sends the login token when it
-connects, and the API refuses a socket without a valid token.
+(`lib/socket.ts`, `components/SocketListener.tsx`). It sends the login token when
+it connects, and the API refuses a socket without a valid token.
 
-## Getting Started
+## Run it locally
 
-First, run the development server:
+Requirements: Node.js 24.22.1 or newer (`nvm use` picks version 24 from
+`.nvmrc`) and pnpm 10. The API must be running on http://localhost:3000, and you
+need an admin account (see "Before the first start" in the API README).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+    cp .env.example .env
+    pnpm install
+    pnpm dev -p 3002
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open http://localhost:3002 and log in.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Settings
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `NEXT_PUBLIC_API_URL`: address of the API (default http://localhost:3000).
+  This value is public: it ends up in the browser.
 
-## Learn More
+## Checks
 
-To learn more about Next.js, take a look at the following resources:
+    pnpm exec eslint .
+    pnpm exec tsc --noEmit
+    pnpm build
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Where things are
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `app/`: the login page (`app/page.tsx`), dashboard, planning, request page,
+  staff, audit log and settings.
+- `components/`: sidebar, dashboard numbers, new intervention form, live
+  notification listener.
+- `lib/`: `api.ts` (calls with the token), `auth.ts` (session), `socket.ts`,
+  `time.ts` (Paris time).
+- `proxy.ts`: sends visitors without a session to the login page.
 
-## Deploy on Vercel
+## Dependencies
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+pnpm only installs package versions that are at least 14 days old
+(`minimumReleaseAge` in `pnpm-workspace.yaml`). This protects against a
+malicious version being published and installed before anyone notices. A
+security fix that cannot wait is listed by name under
+`minimumReleaseAgeExclude` and pinned to an exact version in `overrides`.
