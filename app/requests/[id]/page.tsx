@@ -28,6 +28,7 @@ interface ServiceRequest {
   hasSupplies: boolean;
   extras: string[];
   startTime: string;
+  endDate?: string | null;
   durationHours: number;
   frequency: string;
   maid?: { id: number; fullName: string; phoneNumber: string };
@@ -329,6 +330,17 @@ export default function RequestDetailsPage({ params }: PageProps) {
                                     <Clock className="h-3.5 w-3.5 text-teal-600" />
                                     {startDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} - 
                                     {getEndTime(request.startTime, request.durationHours)}
+                                    {request.endDate && (
+                                      <span className="block text-xs font-medium text-teal-700">
+                                        Disponible jusqu&rsquo;au{" "}
+                                        {new Date(request.endDate).toLocaleDateString("fr-FR", {
+                                          timeZone: "Europe/Paris",
+                                          weekday: "long",
+                                          day: "numeric",
+                                          month: "long",
+                                        })}
+                                      </span>
+                                    )}
                                 </p>
                             </div>
                         </div>

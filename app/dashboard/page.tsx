@@ -17,7 +17,8 @@ interface ServiceRequest {
   id: number;
   customerName: string;
   customerPhone: string;
-  startTime: string; 
+  startTime: string;
+  endDate?: string | null; 
   durationHours: number;
   address: string;
   propertyType: string;
@@ -308,6 +309,11 @@ export default function AdminDashboard() {
                         <div className="flex items-center gap-2 text-slate-700 font-medium">
                             <Calendar className="h-4 w-4 text-teal-700" />
                             {formatDate(req.startTime)}
+                            {req.endDate && (
+                              <span className="block text-xs font-medium text-teal-700">
+                                &rarr; {formatDate(req.endDate)}
+                              </span>
+                            )}
                         </div>
                         <div className="flex items-center gap-2 text-slate-500">
                             <Clock className="h-4 w-4" />
