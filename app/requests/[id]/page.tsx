@@ -38,6 +38,7 @@ interface Maid {
   id: number;
   fullName: string;
   specialty: string;
+  status: string;
 }
 
 interface PageProps {
@@ -62,10 +63,11 @@ export default function RequestDetailsPage({ params }: PageProps) {
       try {
         const [reqRes, maidsRes] = await Promise.all([
           api.get(`/service-requests/${id}`),
-          api.get('/maids?status=AVAILABLE') 
+          api.get('/maids') 
         ]);
         setRequest(reqRes.data);
-        setMaids(maidsRes.data);
+        // People on leave cannot be assigned, so they are not offered.
+        setMaids(maidsRes.data.filter((m: Maid) => m.status !== 'ON_LEAVE'));
       } catch (err) {
         console.error("Error loading data:", err);
       } finally {
@@ -81,7 +83,8 @@ export default function RequestDetailsPage({ params }: PageProps) {
   // A. Change Status (Workflow linéaire)
   const handleStatusUpdate = async (newStatus: string) => {
     const actionText = newStatus === 'COMPLETED' ? 'marquer cette mission comme terminée' : 
-                       newStatus === 'CANCELLED' ? 'annuler cette demande' : 
+                       newStatus === 'CANCELLED' ? 'annuler cette demande' :
+                       newStatus === 'REJECTED' ? 'refuser cette demande' : 
                        'valider cette demande';
 
     if (!confirm(`Voulez-vous vraiment ${actionText} ?`)) return;
@@ -179,6 +182,16 @@ export default function RequestDetailsPage({ params }: PageProps) {
                     </button>
                 )}
 
+                {/* A new request can be refused (it then counts as REJECTED) */}
+                {request.status === 'REQUESTED' && (
+                    <button
+                        onClick={() => handleStatusUpdate('REJECTED')}
+                        className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                        <XCircle className="h-4 w-4" /> Refuser
+                    </button>
+                )}
+
                 {/* ÉTAPE 1 : En Attente -> Confirmer */}
                 {request.status === 'REQUESTED' && (
                     <button 
@@ -217,6 +230,13 @@ export default function RequestDetailsPage({ params }: PageProps) {
                 {request.status === 'CANCELLED' && (
                     <div className="flex items-center gap-2 rounded-lg bg-slate-100 px-5 py-2 text-sm font-bold text-slate-500 border border-slate-200">
                         <XCircle className="h-5 w-5" /> Mission Annulée
+                    </div>
+                )}
+
+                {/* Demande refusee */}
+                {request.status === 'REJECTED' && (
+                    <div className="flex items-center gap-2 rounded-lg bg-slate-100 px-5 py-2 text-sm font-bold text-slate-600 border border-slate-200">
+                        <XCircle className="h-5 w-5" /> Demande refus&eacute;e
                     </div>
                 )}
             </div>

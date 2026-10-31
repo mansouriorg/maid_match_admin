@@ -61,6 +61,8 @@ export default function StaffCatalogPage() {
         case 'busy': 
         case 'assigned':
             return <span className="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-bold text-orange-700 uppercase tracking-wide">En Mission</span>;
+        case 'on_leave':
+            return <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-bold text-slate-700 uppercase tracking-wide">En cong&eacute;</span>;
         default: 
             return <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500 uppercase tracking-wide">{status}</span>;
     }

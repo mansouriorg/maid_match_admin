@@ -44,7 +44,8 @@ export default function NewInterventionModal({ isOpen, onClose, onSuccess }: New
   // Fetch Maids when modal opens
   useEffect(() => {
     if (isOpen) {
-      api.get("/maids?status=AVAILABLE").then((res) => setMaids(res.data));
+      // People on leave cannot be assigned, so they are not offered.
+      api.get("/maids").then((res) => setMaids(res.data.filter((m: { status?: string }) => m.status !== "ON_LEAVE")));
     }
   }, [isOpen]);
 

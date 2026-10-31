@@ -16,9 +16,11 @@ interface AnalyticsData {
   totalRequests: number;
   statusCounts: {
     requested: number;
+    confirmed?: number;
     assigned: number;
     completed: number;
     cancelled: number;
+    rejected?: number;
   };
   totalHours: number;
   estimatedRevenue: number;
@@ -78,7 +80,7 @@ export default function DashboardStats() {
     {
       title: "Total Réservations",
       value: stats.totalRequests,
-      subtitle: `Dont ${stats.statusCounts.cancelled} annulées`,
+      subtitle: `Dont ${stats.statusCounts.cancelled} annulées, ${stats.statusCounts.rejected ?? 0} refusées`,
       icon: CalendarDays,
       color: "bg-blue-500",
       lightColor: "bg-blue-100 text-blue-600",
@@ -86,7 +88,7 @@ export default function DashboardStats() {
     {
       title: "Nouvelles Demandes",
       value: stats.statusCounts.requested,
-      subtitle: "En attente d'assignation",
+      subtitle: `${stats.statusCounts.confirmed ?? 0} confirmée(s) en attente d'intervenant`,
       icon: Clock,
       color: "bg-orange-500",
       lightColor: "bg-orange-100 text-orange-600",
