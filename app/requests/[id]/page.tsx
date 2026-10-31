@@ -31,6 +31,7 @@ interface ServiceRequest {
   endDate?: string | null;
   durationHours: number;
   frequency: string;
+  internalNote?: string | null;
   maid?: { id: number; fullName: string; phoneNumber: string };
 }
 
@@ -56,6 +57,7 @@ export default function RequestDetailsPage({ params }: PageProps) {
   const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState(false);
   const [note, setNote] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
 
   // --- 1. FETCH DATA (Request + Available Maids) ---
   useEffect(() => {
@@ -66,6 +68,7 @@ export default function RequestDetailsPage({ params }: PageProps) {
           api.get('/maids') 
         ]);
         setRequest(reqRes.data);
+        setNote(reqRes.data.internalNote ?? "");
         // People on leave cannot be assigned, so they are not offered.
         setMaids(maidsRes.data.filter((m: Maid) => m.status !== 'ON_LEAVE'));
       } catch (err) {
@@ -116,6 +119,21 @@ export default function RequestDetailsPage({ params }: PageProps) {
       toast.error("Erreur : " + (err.response?.data?.message || "Impossible d'assigner."));
     } finally {
       setAssigning(false);
+    }
+  };
+
+  // C. Save the internal note (only the team sees it)
+  const handleSaveNote = async () => {
+    setSavingNote(true);
+    try {
+      const res = await api.patch(`/service-requests/${id}`, { internalNote: note });
+      setRequest(res.data);
+      setNote(res.data.internalNote ?? "");
+      toast.success("Note enregistr\u00e9e.");
+    } catch {
+      toast.error("Impossible d'enregistrer la note.");
+    } finally {
+      setSavingNote(false);
     }
   };
 
@@ -409,14 +427,14 @@ export default function RequestDetailsPage({ params }: PageProps) {
                         placeholder="Ajouter des instructions secrètes ou des remarques sur l'accès..."
                         value={note}
                         onChange={(e) => setNote(e.target.value)}
-                        disabled
-                        aria-describedby="notes-not-saved"
+                        maxLength={2000}
+                        aria-describedby="notes-help"
                     />
-                    <p id="notes-not-saved" className="mt-2 text-sm text-slate-600">
-                        Les notes internes ne sont pas encore enregistr&eacute;es. Cette fonction n&rsquo;est pas encore disponible.
+                    <p id="notes-help" className="mt-2 text-sm text-slate-600">
+                        Visible uniquement par l&rsquo;&eacute;quipe, jamais par le client. {note.length}/2000
                     </p>
-                    <button type="button" disabled className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl bg-slate-900 py-3 text-sm font-bold text-white hover:bg-slate-800 transition-colors shadow-md disabled:cursor-not-allowed disabled:opacity-50">
-                        <Save className="h-4 w-4" /> Sauvegarder la note
+                    <button type="button" onClick={handleSaveNote} disabled={savingNote || note === (request.internalNote ?? "")} className="disabled:opacity-50 mt-4 w-full flex items-center justify-center gap-2 rounded-xl bg-slate-900 py-3 text-sm font-bold text-white hover:bg-slate-800 transition-colors shadow-md disabled:cursor-not-allowed disabled:opacity-50">
+                        {savingNote ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Sauvegarder la note
                     </button>
                 </div>
             </div>
