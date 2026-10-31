@@ -109,7 +109,7 @@ export default function Sidebar() {
   return (
     <>
       {/* Phones and tablets: top bar with the menu button */}
-      <div className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 lg:hidden">
+      <div className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 lg:hidden print:hidden">
         {logo}
         <button
           ref={menuButtonRef}
@@ -157,7 +157,7 @@ export default function Sidebar() {
       )}
 
       {/* Large screens: the fixed sidebar */}
-      <aside className="fixed left-0 top-0 hidden h-screen w-64 flex-col border-r border-slate-200 bg-white text-slate-600 lg:flex">
+      <aside className="fixed left-0 top-0 hidden h-screen w-64 flex-col border-r border-slate-200 bg-white text-slate-600 lg:flex print:hidden">
         <div className="flex h-20 items-center border-b border-slate-100 px-8">
           {logo}
         </div>

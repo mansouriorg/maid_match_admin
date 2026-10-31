@@ -58,6 +58,7 @@ export default function RequestDetailsPage({ params }: PageProps) {
   const [assigning, setAssigning] = useState(false);
   const [note, setNote] = useState("");
   const [savingNote, setSavingNote] = useState(false);
+  const [bookingCount, setBookingCount] = useState<number | null>(null);
 
   // --- 1. FETCH DATA (Request + Available Maids) ---
   useEffect(() => {
@@ -69,6 +70,13 @@ export default function RequestDetailsPage({ params }: PageProps) {
         ]);
         setRequest(reqRes.data);
         setNote(reqRes.data.internalNote ?? "");
+        // How many bookings this customer has made (same phone number)
+        const phone = reqRes.data.customerPhone;
+        api.get('/service-requests', { params: { search: phone } })
+          .then((res) => setBookingCount(
+            Array.isArray(res.data) ? res.data.filter((r: { customerPhone: string }) => r.customerPhone === phone).length : null,
+          ))
+          .catch(() => setBookingCount(null));
         // People on leave cannot be assigned, so they are not offered.
         setMaids(maidsRes.data.filter((m: Maid) => m.status !== 'ON_LEAVE'));
       } catch (err) {
@@ -399,7 +407,11 @@ export default function RequestDetailsPage({ params }: PageProps) {
                         </div>
                         <div>
                             <p className="font-bold text-slate-900">{request.customerName}</p>
-                            <p className="text-xs font-medium text-teal-700 bg-teal-50 px-2 py-0.5 rounded inline-block mt-1">Nouveau Client</p>
+                            {bookingCount !== null && (
+                                <p className="text-xs font-medium text-teal-700 bg-teal-50 px-2 py-0.5 rounded inline-block mt-1">
+                                    {bookingCount > 1 ? `Client fid\u00e8le \u00b7 ${bookingCount} r\u00e9servations` : "Nouveau client"}
+                                </p>
+                            )}
                         </div>
                     </div>
                     <div className="space-y-3">

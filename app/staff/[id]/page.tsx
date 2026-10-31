@@ -4,8 +4,8 @@ import { use, useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import { api } from "@/lib/api"; // Import your Axios instance
 import { 
-  ArrowLeft, MapPin, Phone, Mail, Star, Award, 
-  CalendarCheck, Download, CheckCircle2, Languages, Loader2, AlertCircle, User
+  ArrowLeft, MapPin, Phone, Star, 
+  CalendarCheck, Printer, CheckCircle2, Languages, Loader2, AlertCircle, User
 } from "lucide-react";
 import Link from "next/link";
 
@@ -22,6 +22,7 @@ interface Maid {
   status: string;
   isVerified: boolean;
   requests?: unknown[]; // To calculate job count
+  upcoming?: { id: number; startTime: string; durationHours: number; address: string; customerName: string }[];
   _count?: { requests: number };
 }
 
@@ -97,7 +98,7 @@ export default function StaffProfilePage({ params }: PageProps) {
       <main className="lg:ml-64 flex-1 p-4 sm:p-8">
         
         {/* Navigation Return */}
-        <div className="mb-6">
+        <div className="mb-6 print:hidden">
             <Link href="/staff" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-teal-700 transition-colors">
                 <ArrowLeft className="h-4 w-4" />
                 Retour au catalogue
@@ -131,12 +132,12 @@ export default function StaffProfilePage({ params }: PageProps) {
                     
                     {/* Action Buttons */}
                     <div className="flex gap-3 mb-1">
-                        {/* Hidden until CVs can be stored (there is no file upload yet). */}
-                        <button hidden type="button" className="flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 font-bold text-slate-600 hover:bg-slate-50 transition-colors">
-                            <Download className="h-4 w-4" />
-                            <span className="hidden sm:inline">Télécharger CV</span>
+                        {/* Prints this profile (the print window can also save it as PDF) */}
+                        <button type="button" onClick={() => window.print()} className="print:hidden flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+                            <Printer className="h-4 w-4" />
+                            <span className="hidden sm:inline">Imprimer la fiche</span>
                         </button>
-                        <a href={`tel:${staff.phoneNumber.replace(/\s/g, "")}`} className="rounded-lg bg-teal-700 px-4 py-2 font-bold text-white shadow-md hover:bg-teal-800 transition-colors">
+                        <a href={`tel:${staff.phoneNumber.replace(/\s/g, "")}`} className="print:hidden rounded-lg bg-teal-700 px-4 py-2 font-bold text-white shadow-md hover:bg-teal-800 transition-colors">
                             Contacter
                         </a>
                     </div>
@@ -165,9 +166,9 @@ export default function StaffProfilePage({ params }: PageProps) {
                             {staff.phoneNumber}
                         </div>
                         <div className="flex items-center gap-3 text-slate-600">
-                            <Mail className="h-4 w-4 text-teal-600" />
-                            {/* Placeholder email generator based on name */}
-                            {staff.fullName.split(' ')[0].toLowerCase()}@maidmatch.com
+                            <CalendarCheck className="h-4 w-4 text-teal-600" />
+                            {/* Current status, set on the profile */}
+                            {staff.status === "ON_LEAVE" ? "En cong\u00e9" : "Disponible"}
                         </div>
                     </div>
                 </div>
@@ -192,8 +193,8 @@ export default function StaffProfilePage({ params }: PageProps) {
                             <p className="text-xs text-slate-500 uppercase font-bold">Ans Exp.</p>
                         </div>
                         <div className="rounded-xl bg-green-50 p-3 text-center border border-green-100">
-                            <p className="text-xl font-bold text-green-700">100%</p>
-                            <p className="text-xs text-green-600 uppercase font-bold">Fiabilité</p>
+                            <p className="text-xl font-bold text-green-700">{staff.upcoming?.length ?? 0}</p>
+                            <p className="text-xs text-green-600 uppercase font-bold">&Agrave; venir</p>
                         </div>
                     </div>
                 </div>
@@ -217,8 +218,8 @@ export default function StaffProfilePage({ params }: PageProps) {
                              </div>
                          )}
                          <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                            <Award className="h-5 w-5 text-indigo-500" />
-                            Certifiée Hygiène & Sécurité
+                            <CheckCircle2 className="h-5 w-5 text-indigo-500" />
+                            {staff.isVerified ? "Identit\u00e9 v\u00e9rifi\u00e9e" : "Identit\u00e9 non v\u00e9rifi\u00e9e"}
                          </div>
                     </div>
                 </div>
@@ -232,8 +233,8 @@ export default function StaffProfilePage({ params }: PageProps) {
                             <CheckCircle2 className="h-4 w-4 text-teal-700" />
                             {staff.specialty}
                         </div>
-                        {/* Since we don't store extra skills separately yet, we can re-list languages or static placeholders */}
-                        {['Nettoyage Vapeur', 'Produits Écologiques', 'Gestion du Temps'].map(skill => (
+                        {/* Experience, from the profile */}
+                        {[`${staff.experienceYears} an(s) d\u2019exp\u00e9rience`].map(skill => (
                             <div key={skill} className="flex items-center gap-2 rounded-lg bg-slate-50 border border-slate-200 px-4 py-2 text-slate-600 font-medium text-sm">
                                 <div className="h-1.5 w-1.5 rounded-full bg-slate-400" />
                                 {skill}
@@ -242,27 +243,26 @@ export default function StaffProfilePage({ params }: PageProps) {
                     </div>
                 </div>
 
-                {/* Availability Calendar (Simulated for UI) */}
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm opacity-80">
+                {/* Next assigned jobs (real data) */}
+                <div id="upcoming-jobs" className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-bold text-slate-900">Disponibilités (Simulé)</h3>
+                        <h3 className="text-lg font-bold text-slate-900">Prochaines interventions</h3>
                         <CalendarCheck className="h-5 w-5 text-slate-500" />
                     </div>
-                    <div className="grid grid-cols-7 gap-2 text-center">
-                        {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day, i) => (
-                            <div key={day} className={`rounded-lg p-3 text-sm font-bold border ${
-                                i === 6 ? 'bg-slate-50 text-slate-500 border-slate-100' : 
-                                staff.status === 'BUSY' ? 'bg-orange-50 text-orange-700 border-orange-100' :
-                                'bg-white text-slate-700 border-teal-200'
-                            }`}>
-                                {day}
-                                <div className={`mt-2 h-1.5 w-1.5 rounded-full mx-auto ${
-                                    i === 6 ? 'bg-slate-300' : 
-                                    staff.status === 'BUSY' ? 'bg-orange-400' : 'bg-green-500'
-                                }`} />
-                            </div>
-                        ))}
-                    </div>
+                    {(staff.upcoming ?? []).length === 0 ? (
+                        <p id="upcoming-list" className="text-sm text-slate-600">Aucune intervention assign&eacute;e &agrave; venir.</p>
+                    ) : (
+                        <ul id="upcoming-list" className="divide-y divide-slate-100">
+                            {(staff.upcoming ?? []).map((job) => (
+                                <li key={job.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
+                                    <Link href={`/requests/${job.id}`} className="font-medium text-slate-900 hover:text-teal-700">
+                                        {new Date(job.startTime).toLocaleString("fr-FR", { timeZone: "Europe/Paris", weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} &middot; {job.durationHours} h
+                                    </Link>
+                                    <span className="text-slate-600">{job.customerName} &ndash; {job.address}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </div>
 
             </div>
