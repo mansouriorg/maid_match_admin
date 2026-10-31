@@ -2,6 +2,7 @@
 
 import Sidebar from "@/components/Sidebar";
 import { api } from "@/lib/api";
+import { toParisWallClock } from "@/lib/time";
 import { 
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
   MapPin, Clock, Plus, UserCircle, Loader2, AlertCircle,
@@ -75,6 +76,7 @@ export default function PlanningPage() {
 
   // 3. Initial Fetch
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads the week on screen; showing the loading state right away is intended
     fetchPlanning();
   }, [fetchPlanning]); 
 
@@ -101,7 +103,7 @@ export default function PlanningPage() {
 
   const getJobsForDay = (date: Date) => {
     return requests.filter(req => {
-      const reqDate = new Date(req.startTime);
+      const reqDate = toParisWallClock(new Date(req.startTime));
       return (
         reqDate.getDate() === date.getDate() &&
         reqDate.getMonth() === date.getMonth() &&
@@ -115,38 +117,38 @@ export default function PlanningPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
+    <div className="flex min-h-screen flex-col lg:flex-row bg-slate-50 font-sans text-slate-900">
       <Sidebar />
-      <main className="ml-64 flex-1 flex flex-col h-screen overflow-hidden">
+      <main className="lg:ml-64 flex-1 flex flex-col h-screen overflow-hidden">
         
         {/* --- Header --- */}
-        <header className="flex h-20 flex-shrink-0 items-center justify-between border-b border-slate-200 bg-white px-8">
+        <header className="flex min-h-20 flex-shrink-0 flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-8">
             <div className="flex items-center gap-4">
                 <h1 className="text-2xl font-bold text-slate-800">Planning</h1>
                 
                 {/* Navigation Controls */}
                 <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-1">
-                    <button onClick={prevWeek} className="rounded-md p-1 hover:bg-white hover:shadow-sm transition-all">
+                    <button onClick={prevWeek} aria-label={"Semaine pr\u00e9c\u00e9dente"} className="rounded-md p-1 hover:bg-white hover:shadow-sm transition-all">
                         <ChevronLeft className="h-5 w-5 text-slate-500" />
                     </button>
                     <div className="px-4 font-bold text-slate-700 flex items-center gap-2 text-sm min-w-[180px] justify-center">
-                        <CalendarIcon className="h-4 w-4 text-teal-600" />
+                        <CalendarIcon className="h-4 w-4 text-teal-700" />
                         {startOfWeek.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} 
                         {" - "} 
                         {endOfWeek.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </div>
-                    <button onClick={nextWeek} className="rounded-md p-1 hover:bg-white hover:shadow-sm transition-all">
+                    <button onClick={nextWeek} aria-label="Semaine suivante" className="rounded-md p-1 hover:bg-white hover:shadow-sm transition-all">
                         <ChevronRight className="h-5 w-5 text-slate-500" />
                     </button>
                 </div>
 
-                {loading && <Loader2 className="h-5 w-5 animate-spin text-teal-600 ml-2" />}
+                {loading && <Loader2 className="h-5 w-5 animate-spin text-teal-700 ml-2" />}
             </div>
 
             <div className="flex gap-3">
                 <button 
                   onClick={() => setIsModalOpen(true)}
-                  className="flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-teal-700 transition-colors"
+                  className="flex items-center gap-2 rounded-lg bg-teal-700 px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-teal-800 transition-colors"
                 >
                     <Plus className="h-4 w-4" />
                     Nouvelle Intervention
@@ -177,19 +179,19 @@ export default function PlanningPage() {
                             {/* Column Header */}
                             <div className={`mb-4 flex flex-col items-center justify-center rounded-xl border p-3 text-center transition-colors ${
                                 isToday 
-                                ? 'bg-teal-600 text-white border-teal-600 shadow-lg shadow-teal-200' 
+                                ? 'bg-teal-700 text-white border-teal-600 shadow-lg shadow-teal-200' 
                                 : 'bg-white text-slate-600 border-slate-200'
                             }`}>
-                                <span className={`text-xs font-bold uppercase ${isToday ? 'text-teal-100' : 'text-slate-400'}`}>{dayName}</span>
+                                <span className={`text-xs font-bold uppercase ${isToday ? 'text-teal-100' : 'text-slate-500'}`}>{dayName}</span>
                                 <span className="text-2xl font-bold">{dayNumber}</span>
-                                <span className={`text-[10px] font-bold uppercase ${isToday ? 'text-teal-100' : 'text-slate-400'}`}>{month}</span>
+                                <span className={`text-xs font-bold uppercase ${isToday ? 'text-teal-100' : 'text-slate-500'}`}>{month}</span>
                             </div>
 
                             {/* Jobs List */}
                             <div className="flex-1 space-y-3 overflow-y-auto rounded-xl bg-slate-100/50 p-2 border border-slate-200/50">
                                 {jobs.length === 0 && !loading && (
                                     <div className="flex h-full items-center justify-center opacity-30">
-                                        <p className="text-xs font-bold text-slate-400">Aucune mission</p>
+                                        <p className="text-xs font-bold text-slate-500">Aucune mission</p>
                                     </div>
                                 )}
 
@@ -205,19 +207,19 @@ export default function PlanningPage() {
                                     >
                                         {/* Card Header : Heure, Badge Paiement & Matériel */}
                                         <div className="mb-2 flex items-start justify-between">
-                                            <div className="flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 group-hover:bg-teal-50 group-hover:text-teal-700 transition-colors">
+                                            <div className="flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-bold text-slate-600 group-hover:bg-teal-50 group-hover:text-teal-700 transition-colors">
                                                 <Clock className="h-3 w-3" />
-                                                {new Date(job.startTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                                {new Date(job.startTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}
                                             </div>
                                             
                                             <div className="flex items-center gap-1.5">
                                                 {/* NOUVEAU : Badge de Paiement */}
                                                 {job.paymentStatus === 'PAID' ? (
-                                                    <div className="flex items-center gap-0.5 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600 border border-emerald-100" title="Paiement reçu">
+                                                    <div className="flex items-center gap-0.5 rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-bold text-emerald-600 border border-emerald-100" title="Paiement reçu">
                                                         <CreditCard className="h-3 w-3" />
                                                     </div>
                                                 ) : (
-                                                    <div className="flex items-center gap-0.5 rounded bg-orange-50 px-1.5 py-0.5 text-[10px] font-bold text-orange-600 border border-orange-100" title="En attente de paiement">
+                                                    <div className="flex items-center gap-0.5 rounded bg-orange-50 px-1.5 py-0.5 text-xs font-bold text-orange-600 border border-orange-100" title="En attente de paiement">
                                                         <CreditCard className="h-3 w-3" />
                                                     </div>
                                                 )}
@@ -240,7 +242,7 @@ export default function PlanningPage() {
                                         <div className="flex items-center gap-2 border-t border-slate-50 pt-2 mt-2">
                                             {job.maid ? (
                                                 <>
-                                                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-700">
+                                                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
                                                         {getInitials(job.maid.fullName)}
                                                     </div>
                                                     <span className="text-xs font-medium text-slate-700 truncate">
@@ -249,7 +251,7 @@ export default function PlanningPage() {
                                                 </>
                                             ) : (
                                                 <>
-                                                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-400 border border-slate-200 border-dashed">
+                                                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-500 border border-slate-200 border-dashed">
                                                         <UserCircle className="h-4 w-4" />
                                                     </div>
                                                     <span className="text-xs font-bold text-orange-400 truncate italic">

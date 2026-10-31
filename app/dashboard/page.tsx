@@ -68,12 +68,19 @@ export default function AdminDashboard() {
 
     fetchData();
 
-    const handleNewIntervention = (payload: any) => {
+    const handleNewIntervention = (payload: AppNotification & { data: ServiceRequest }) => {
       if (payload.data) {
         setRequests((prevRequests) => [payload.data, ...prevRequests]);
       }
 
-      const { data, ...newNotif } = payload;
+      const newNotif: AppNotification = {
+        id: payload.id,
+        title: payload.title,
+        message: payload.message,
+        createdAt: payload.createdAt,
+        isRead: payload.isRead,
+        serviceRequestId: payload.serviceRequestId,
+      };
       setNotifications((prevNotifs) => [newNotif as AppNotification, ...prevNotifs]);
     };
 
@@ -154,36 +161,40 @@ export default function AdminDashboard() {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR', { 
-        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' 
+        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' 
     });
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
+    <div className="flex min-h-screen flex-col lg:flex-row bg-slate-50 font-sans text-slate-900">
       <Sidebar />
       
-      <main className="ml-64 flex-1">
+      <main className="lg:ml-64 flex-1">
         {/* Top Header */}
-        <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-slate-200 bg-white/80 px-8 backdrop-blur-md">
+        <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-slate-200 bg-white/80 px-4 sm:px-8 backdrop-blur-md">
           <h1 className="text-2xl font-bold text-slate-800">Tableau de Bord</h1>
           <div className="flex items-center gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+              {/* The search box is hidden until it is connected to the list below. */}
+              <Search className="absolute left-3 top-3 hidden h-4 w-4 text-slate-500" />
               <input 
+                hidden
                 placeholder="Rechercher un client..." 
-                className="h-10 w-64 rounded-full border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
+                className="h-10 w-36 sm:w-64 rounded-full border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
               />
             </div>
 
             {/* --- ZONE DU BOUTON NOTIFICATION --- */}
             <div className="relative">
               <button 
+                aria-label="Notifications"
+                aria-expanded={isNotifOpen}
                 onClick={toggleNotifMenu}
                 className="relative rounded-full bg-slate-100 p-2 text-slate-600 hover:bg-slate-200 transition-colors"
               >
                 <Bell className="h-5 w-5" />
                 {unreadCount > 0 && (
-                  <span className="absolute right-0 top-0 flex h-3 w-3 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white ring-2 ring-white">
+                  <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-xs font-bold text-white ring-2 ring-white">
                     {unreadCount}
                   </span>
                 )}
@@ -200,7 +211,7 @@ export default function AdminDashboard() {
                           e.stopPropagation(); 
                           markAllAsRead();
                         }}
-                        className="flex items-center gap-1 text-xs font-medium text-teal-600 hover:text-teal-700"
+                        className="flex items-center gap-1 text-xs font-medium text-teal-700 hover:text-teal-700"
                       >
                         <Check className="h-3 w-3" /> Tout marquer lu
                       </button>
@@ -209,7 +220,7 @@ export default function AdminDashboard() {
                   
                   <div className="max-h-80 overflow-y-auto">
                     {notifications.length === 0 ? (
-                      <div className="p-6 text-center text-sm text-slate-400">
+                      <div className="p-6 text-center text-sm text-slate-500">
                         Aucune notification
                       </div>
                     ) : (
@@ -222,8 +233,8 @@ export default function AdminDashboard() {
                           >
                             <div className="flex items-start justify-between gap-2">
                               <p className="text-sm font-bold text-slate-800">{notif.title}</p>
-                              <span className="text-[10px] text-slate-400 flex-shrink-0">
-                                {new Date(notif.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                              <span className="text-xs text-slate-500 flex-shrink-0">
+                                {new Date(notif.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}
                               </span>
                             </div>
                             <p className="mt-1 text-xs text-slate-600 line-clamp-2">{notif.message}</p>
@@ -258,15 +269,15 @@ export default function AdminDashboard() {
           <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
               <h2 className="font-bold text-lg text-slate-800">Dernières réservations</h2>
-              <Link href="/requests" className="text-sm font-medium text-teal-600 hover:text-teal-700">Tout voir</Link>
+              <Link href="/requests" className="text-sm font-medium text-teal-700 hover:text-teal-700">Tout voir</Link>
             </div>
             
             {loading ? (
                 <div className="flex h-40 items-center justify-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+                    <Loader2 className="h-8 w-8 animate-spin text-teal-700" />
                 </div>
             ) : requests.length === 0 ? (
-                <div className="flex h-40 items-center justify-center text-slate-400">
+                <div className="flex h-40 items-center justify-center text-slate-500">
                     Aucune réservation trouvée.
                 </div>
             ) : (
@@ -295,7 +306,7 @@ export default function AdminDashboard() {
                     {/* Middle: Schedule */}
                     <div className="flex w-1/4 flex-col gap-1 text-sm">
                         <div className="flex items-center gap-2 text-slate-700 font-medium">
-                            <Calendar className="h-4 w-4 text-teal-600" />
+                            <Calendar className="h-4 w-4 text-teal-700" />
                             {formatDate(req.startTime)}
                         </div>
                         <div className="flex items-center gap-2 text-slate-500">
@@ -307,7 +318,7 @@ export default function AdminDashboard() {
                     {/* Middle: Address & Alerts */}
                     <div className="hidden w-1/3 lg:block">
                         <div className="flex items-center gap-2 text-sm text-slate-600 mb-2 truncate">
-                            <MapPin className="h-4 w-4 text-slate-400" />
+                            <MapPin className="h-4 w-4 text-slate-500" />
                             <span className="truncate">{req.address}</span>
                         </div>
                         <div className="flex gap-2">
@@ -333,7 +344,7 @@ export default function AdminDashboard() {
                         {/* Quick Actions */}
                         <div className="flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
                             <button 
-                                className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors" 
+                                className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-600 transition-colors" 
                                 title="Détails"
                             >
                                 <MoreHorizontal className="h-4 w-4" />

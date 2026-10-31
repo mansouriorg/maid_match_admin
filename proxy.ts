@@ -1,40 +1,44 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { isTokenValid } from "@/lib/auth";
 
+// This file is a convenience: it sends visitors without a usable session to the
+// login page. It can only read the token (shape and expiry date). It cannot
+// check the signature, so the API must still refuse requests without a valid token.
 export function proxy(request: NextRequest) {
-  // 1. Récupérer le token depuis les cookies
-  const token = request.cookies.get('adminToken')?.value;
+  const token = request.cookies.get("adminToken")?.value;
+  const hasSession = isTokenValid(token);
   const currentPath = request.nextUrl.pathname;
 
-  // 2. Définir quelles routes sont protégées
-  const isProtectedPath = currentPath.startsWith('/admin') || 
-                          currentPath.startsWith('/settings') || 
-                          currentPath.startsWith('/maids');
-
-  // 3. SCÉNARIO A : Non connecté + essaie d'aller sur une page protégée
-  // -> On le renvoie sur la page d'accueil (la page de login : "/")
-  if (isProtectedPath && !token) {
-    const homeLoginUrl = new URL('/', request.url);
-    return NextResponse.redirect(homeLoginUrl);
+  // Login page: a visitor with a session goes straight to the dashboard.
+  if (currentPath === "/") {
+    if (hasSession) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+    return NextResponse.next();
   }
 
-  // 4. SCÉNARIO B (Bonus Pro) : Déjà connecté + va sur la page de login ("/")
-  // -> On l'envoie directement sur son tableau de bord !
-  if (currentPath === '/' && token) {
-    const dashboardUrl = new URL('/admin', request.url);
-    return NextResponse.redirect(dashboardUrl);
+  // Every other matched page needs a session.
+  if (hasSession) {
+    return NextResponse.next();
   }
 
-  // 5. Si tout est bon, on laisse passer normalement
-  return NextResponse.next();
+  const response = NextResponse.redirect(new URL("/", request.url));
+  if (token) {
+    // Remove a stale or broken cookie so it does not linger.
+    response.cookies.delete("adminToken");
+  }
+  return response;
 }
 
-// Configuration optimisée pour intercepter la page d'accueil ET les pages protégées
 export const config = {
   matcher: [
-    '/', // On écoute la racine pour le SCÉNARIO B
-    '/admin', '/admin/:path*', 
-    '/settings', '/settings/:path*', 
-    '/maids', '/maids/:path*'
+    "/",
+    "/dashboard", "/dashboard/:path*",
+    "/planning", "/planning/:path*",
+    "/requests", "/requests/:path*",
+    "/staff", "/staff/:path*",
+    "/audit", "/audit/:path*",
+    "/settings", "/settings/:path*",
   ],
 };

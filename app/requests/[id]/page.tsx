@@ -3,13 +3,14 @@
 import { use, useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import { api } from "@/lib/api";
+import { toParisWallClock } from "@/lib/time";
+import toast from "react-hot-toast";
 import { 
   ArrowLeft, Calendar, Clock, MapPin, Phone, Mail, 
   CheckCircle2, XCircle, User, Shield, MessageSquare, Save, 
   AlertTriangle, Loader2, Briefcase, ChevronDown, CheckSquare, Ban
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 // --- TYPES ---
 interface ServiceRequest {
@@ -44,7 +45,6 @@ interface PageProps {
 
 export default function RequestDetailsPage({ params }: PageProps) {
   const { id } = use(params);
-  const router = useRouter();
 
   // --- STATE ---
   const [request, setRequest] = useState<ServiceRequest | null>(null);
@@ -88,14 +88,14 @@ export default function RequestDetailsPage({ params }: PageProps) {
     try {
         const res = await api.patch(`/service-requests/${id}/status`, { status: newStatus });
         setRequest(res.data); 
-    } catch (err) {
-        alert("Erreur lors de la mise à jour du statut.");
+    } catch {
+        toast.error("Erreur lors de la mise à jour du statut.");
     }
   };
 
   // B. Assign Maid
   const handleAssignMaid = async () => {
-    if (!selectedMaidId) return alert("Veuillez sélectionner un intervenant.");
+    if (!selectedMaidId) return void toast.error("Veuillez sélectionner un intervenant.");
     
     setAssigning(true);
     try {
@@ -103,9 +103,13 @@ export default function RequestDetailsPage({ params }: PageProps) {
         maidId: parseInt(selectedMaidId)
       });
       setRequest(res.data); 
-      alert("Intervenant assigné avec succès !");
-    } catch (err: any) {
-      alert("Erreur : " + (err.response?.data?.message || "Impossible d'assigner."));
+      toast.success("Intervenant assigné avec succès !");
+    } catch (caught) {
+      const err = caught as {
+        message?: string;
+        response?: { status?: number; data?: { message?: string } };
+      };
+      toast.error("Erreur : " + (err.response?.data?.message || "Impossible d'assigner."));
     } finally {
       setAssigning(false);
     }
@@ -115,40 +119,40 @@ export default function RequestDetailsPage({ params }: PageProps) {
   const getEndTime = (startStr: string, duration: number) => {
     const date = new Date(startStr);
     date.setHours(date.getHours() + duration);
-    return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
   };
 
   if (loading || !request) {
     return (
-        <div className="flex min-h-screen bg-slate-50 font-sans">
+        <div className="flex min-h-screen flex-col lg:flex-row bg-slate-50 font-sans">
             <Sidebar />
-            <div className="ml-64 flex-1 flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+            <div className="lg:ml-64 flex-1 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-teal-700" />
             </div>
         </div>
     );
   }
 
-  const startDate = new Date(request.startTime);
+  const startDate = toParisWallClock(new Date(request.startTime));
 
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
+    <div className="flex min-h-screen flex-col lg:flex-row bg-slate-50 font-sans text-slate-900">
       <Sidebar />
 
-      <main className="ml-64 flex-1 p-8">
+      <main className="lg:ml-64 flex-1 p-4 sm:p-8">
         
         {/* --- Header --- */}
-        <div className="mb-8 flex items-center justify-between border-b border-slate-200 pb-6">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-6">
             <div className="flex items-center gap-4">
-                <Link href="/planning" className="rounded-full bg-white p-2 text-slate-400 shadow-sm border border-slate-200 hover:text-teal-600 hover:shadow-md transition-all">
+                <Link href="/planning" className="rounded-full bg-white p-2 text-slate-500 shadow-sm border border-slate-200 hover:text-teal-700 hover:shadow-md transition-all">
                     <ArrowLeft className="h-5 w-5" />
                 </Link>
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Demande #{request.id}</h1>
                     <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
-                        <span>Créée le {new Date(request.createdAt).toLocaleDateString('fr-FR')}</span>
+                        <span>Créée le {new Date(request.createdAt).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' })}</span>
                         <span>•</span>
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider ${
                             request.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
                             request.status === 'CONFIRMED' ? 'bg-teal-100 text-teal-800' : 
                             request.status === 'ASSIGNED' ? 'bg-blue-100 text-blue-800' :
@@ -178,7 +182,7 @@ export default function RequestDetailsPage({ params }: PageProps) {
                 {request.status === 'REQUESTED' && (
                     <button 
                         onClick={() => handleStatusUpdate('CONFIRMED')}
-                        className="flex items-center gap-2 rounded-lg bg-teal-600 px-5 py-2 text-sm font-bold text-white shadow-lg shadow-teal-200 hover:bg-teal-700 transition-colors"
+                        className="flex items-center gap-2 rounded-lg bg-teal-700 px-5 py-2 text-sm font-bold text-white shadow-lg shadow-teal-200 hover:bg-teal-800 transition-colors"
                     >
                         <CheckCircle2 className="h-4 w-4" /> Confirmer la mission
                     </button>
@@ -187,7 +191,7 @@ export default function RequestDetailsPage({ params }: PageProps) {
                 {/* ÉTAPE 2 : Confirmé -> En attente d'assignation (Indicateur visuel) */}
                 {request.status === 'CONFIRMED' && (
                     <div className="flex items-center gap-2 rounded-lg bg-orange-50 px-5 py-2 text-sm font-bold text-orange-700 border border-orange-200 shadow-sm">
-                        <AlertTriangle className="h-4 w-4" /> En attente d'intervenant
+                        <AlertTriangle className="h-4 w-4" /> En attente d&rsquo;intervenant
                     </div>
                 )}
 
@@ -252,10 +256,11 @@ export default function RequestDetailsPage({ params }: PageProps) {
                         ) : (
                             <div className="flex flex-col sm:flex-row gap-4 items-end">
                                 <div className="flex-1 w-full space-y-2">
-                                    <label className="text-sm font-bold text-slate-700">Sélectionner un intervenant de l'équipe :</label>
+                                    <label htmlFor="assign-maid" className="text-sm font-bold text-slate-700">Sélectionner un intervenant de l&rsquo;équipe :</label>
                                     <div className="relative">
                                         <select 
                                             className="w-full appearance-none rounded-xl border border-slate-300 bg-white px-4 py-3 pr-10 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 font-medium text-slate-700"
+                                            id="assign-maid"
                                             value={selectedMaidId}
                                             onChange={(e) => setSelectedMaidId(e.target.value)}
                                         >
@@ -266,7 +271,7 @@ export default function RequestDetailsPage({ params }: PageProps) {
                                                 </option>
                                             ))}
                                         </select>
-                                        <ChevronDown className="absolute right-4 top-3.5 h-5 w-5 text-slate-400 pointer-events-none" />
+                                        <ChevronDown className="absolute right-4 top-3.5 h-5 w-5 text-slate-500 pointer-events-none" />
                                     </div>
                                 </div>
                                 <button 
@@ -284,18 +289,18 @@ export default function RequestDetailsPage({ params }: PageProps) {
                 {/* 2. Property Details */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h2 className="mb-4 text-lg font-bold text-slate-800 flex items-center gap-2">
-                        <Shield className="h-5 w-5 text-teal-600" /> Détails de la propriété
+                        <Shield className="h-5 w-5 text-teal-700" /> Détails de la propriété
                     </h2>
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-1">
-                            <p className="text-xs font-bold uppercase text-slate-400">Adresse complète</p>
+                            <p className="text-xs font-bold uppercase text-slate-500">Adresse complète</p>
                             <p className="font-medium text-slate-900 flex items-start gap-2">
-                                <MapPin className="h-4 w-4 text-teal-500 shrink-0 mt-0.5" /> 
+                                <MapPin className="h-4 w-4 text-teal-600 shrink-0 mt-0.5" /> 
                                 <span className="leading-snug">{request.address}</span>
                             </p>
                         </div>
                         <div className="space-y-1">
-                            <p className="text-xs font-bold uppercase text-slate-400">Type de nettoyage</p>
+                            <p className="text-xs font-bold uppercase text-slate-500">Type de nettoyage</p>
                             <p className="font-medium text-slate-900 capitalize">
                                 {request.cleaningType === 'deep' ? 'Grand Ménage' : 'Standard'} • {request.durationHours}h
                             </p>
@@ -306,12 +311,12 @@ export default function RequestDetailsPage({ params }: PageProps) {
                 {/* 3. Schedule */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h2 className="mb-4 text-lg font-bold text-slate-800 flex items-center gap-2">
-                        <Calendar className="h-5 w-5 text-teal-600" /> Planning et Horaires
+                        <Calendar className="h-5 w-5 text-teal-700" /> Planning et Horaires
                     </h2>
                     <div className="flex items-center justify-between rounded-xl bg-slate-50 p-4 border border-slate-100">
                         <div className="flex items-center gap-4">
                             <div className="flex h-14 w-14 flex-col items-center justify-center rounded-xl bg-white border border-slate-200 shadow-sm">
-                                <span className="text-[10px] font-extrabold text-teal-600 uppercase">
+                                <span className="text-xs font-extrabold text-teal-700 uppercase">
                                     {startDate.toLocaleDateString('fr-FR', { month: 'short' })}
                                 </span>
                                 <span className="text-xl font-black text-slate-800 leading-none mt-0.5">
@@ -319,9 +324,9 @@ export default function RequestDetailsPage({ params }: PageProps) {
                                 </span>
                             </div>
                             <div>
-                                <p className="font-bold text-slate-900">Date d'intervention prévue</p>
+                                <p className="font-bold text-slate-900">Date d&rsquo;intervention prévue</p>
                                 <p className="text-sm font-medium text-slate-600 flex items-center gap-1.5 mt-0.5">
-                                    <Clock className="h-3.5 w-3.5 text-teal-500" />
+                                    <Clock className="h-3.5 w-3.5 text-teal-600" />
                                     {startDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} - 
                                     {getEndTime(request.startTime, request.durationHours)}
                                 </p>
@@ -336,7 +341,7 @@ export default function RequestDetailsPage({ params }: PageProps) {
             <div className="space-y-6">
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h2 className="mb-4 text-lg font-bold text-slate-800 flex items-center gap-2">
-                        <User className="h-5 w-5 text-teal-600" /> Client
+                        <User className="h-5 w-5 text-teal-700" /> Client
                     </h2>
                     <div className="flex items-center gap-4 mb-6">
                         <div className="h-12 w-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-bold text-lg uppercase shadow-inner">
@@ -344,19 +349,19 @@ export default function RequestDetailsPage({ params }: PageProps) {
                         </div>
                         <div>
                             <p className="font-bold text-slate-900">{request.customerName}</p>
-                            <p className="text-xs font-medium text-teal-600 bg-teal-50 px-2 py-0.5 rounded inline-block mt-1">Nouveau Client</p>
+                            <p className="text-xs font-medium text-teal-700 bg-teal-50 px-2 py-0.5 rounded inline-block mt-1">Nouveau Client</p>
                         </div>
                     </div>
                     <div className="space-y-3">
                         <a href={`tel:${request.customerPhone}`} className="flex items-center gap-3 rounded-xl border border-slate-100 p-3 hover:bg-teal-50 hover:border-teal-100 group transition-colors">
                             <div className="p-2 bg-slate-50 rounded-lg group-hover:bg-teal-100 transition-colors">
-                                <Phone className="h-4 w-4 text-teal-600" />
+                                <Phone className="h-4 w-4 text-teal-700" />
                             </div>
                             <span className="text-sm font-bold text-slate-700 group-hover:text-teal-800">{request.customerPhone}</span>
                         </a>
                         <a href={`mailto:${request.customerEmail}`} className="flex items-center gap-3 rounded-xl border border-slate-100 p-3 hover:bg-teal-50 hover:border-teal-100 group transition-colors">
                             <div className="p-2 bg-slate-50 rounded-lg group-hover:bg-teal-100 transition-colors">
-                                <Mail className="h-4 w-4 text-teal-600" />
+                                <Mail className="h-4 w-4 text-teal-700" />
                             </div>
                             <span className="text-sm font-bold text-slate-700 group-hover:text-teal-800 truncate">{request.customerEmail}</span>
                         </a>
@@ -365,15 +370,20 @@ export default function RequestDetailsPage({ params }: PageProps) {
 
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h2 className="mb-4 text-lg font-bold text-slate-800 flex items-center gap-2">
-                        <MessageSquare className="h-5 w-5 text-teal-600" /> Notes Internes
+                        <MessageSquare className="h-5 w-5 text-teal-700" /> Notes Internes
                     </h2>
                     <textarea 
                         className="w-full rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10 outline-none min-h-[120px] resize-none transition-all"
                         placeholder="Ajouter des instructions secrètes ou des remarques sur l'accès..."
                         value={note}
                         onChange={(e) => setNote(e.target.value)}
+                        disabled
+                        aria-describedby="notes-not-saved"
                     />
-                    <button className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl bg-slate-900 py-3 text-sm font-bold text-white hover:bg-slate-800 transition-colors shadow-md">
+                    <p id="notes-not-saved" className="mt-2 text-sm text-slate-600">
+                        Les notes internes ne sont pas encore enregistr&eacute;es. Cette fonction n&rsquo;est pas encore disponible.
+                    </p>
+                    <button type="button" disabled className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl bg-slate-900 py-3 text-sm font-bold text-white hover:bg-slate-800 transition-colors shadow-md disabled:cursor-not-allowed disabled:opacity-50">
                         <Save className="h-4 w-4" /> Sauvegarder la note
                     </button>
                 </div>

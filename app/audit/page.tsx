@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import { 
   ShieldAlert, 
   Clock, 
-  User, 
   Loader2, 
   AlertCircle,
   Database,
@@ -58,9 +57,9 @@ export default function AuditPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
+    <div className="flex min-h-screen flex-col lg:flex-row bg-slate-50 font-sans text-slate-900">
       <Sidebar />
-      <main className="ml-64 flex-1 p-8 max-w-7xl mx-auto">
+      <main className="lg:ml-64 flex-1 p-4 sm:p-8 max-w-7xl mx-auto">
         
         {/* En-tête */}
         <div className="mb-8 flex flex-col gap-2 border-b border-slate-200 pb-6">
@@ -69,9 +68,9 @@ export default function AuditPage() {
                     <ShieldAlert className="h-6 w-6" />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Journal d'Audit</h1>
+                    <h1 className="text-2xl font-bold text-slate-900">Journal d&rsquo;Audit</h1>
                     <p className="text-sm font-medium text-slate-500">
-                        Traçabilité complète et immuable des actions de l'administration.
+                        Traçabilité complète et immuable des actions de l&rsquo;administration.
                     </p>
                 </div>
             </div>
@@ -80,7 +79,7 @@ export default function AuditPage() {
         {/* Gestion des états (Chargement / Erreur) */}
         {loading && (
             <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+                <Loader2 className="h-8 w-8 animate-spin text-slate-500" />
             </div>
         )}
 
@@ -101,13 +100,13 @@ export default function AuditPage() {
                                 <th className="px-6 py-4">Administrateur</th>
                                 <th className="px-6 py-4">Action</th>
                                 <th className="px-6 py-4">Cible</th>
-                                <th className="px-6 py-4">Détails de l'opération</th>
+                                <th className="px-6 py-4">Détails de l&rsquo;opération</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {logs.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
+                                    <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
                                         <Database className="mx-auto h-8 w-8 mb-3 opacity-20" />
                                         Aucune action enregistrée pour le moment.
                                     </td>
@@ -119,13 +118,13 @@ export default function AuditPage() {
                                         {/* Date & Heure */}
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center gap-2 font-medium text-slate-900">
-                                                <Clock className="h-4 w-4 text-slate-400 group-hover:text-teal-500 transition-colors" />
+                                                <Clock className="h-4 w-4 text-slate-500 group-hover:text-teal-600 transition-colors" />
                                                 {new Date(log.createdAt).toLocaleDateString('fr-FR', { 
-                                                    day: '2-digit', month: 'short', year: 'numeric' 
+                                                    day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Europe/Paris' 
                                                 })}
-                                                <span className="text-slate-400 ml-1">
+                                                <span className="text-slate-500 ml-1">
                                                     {new Date(log.createdAt).toLocaleTimeString('fr-FR', { 
-                                                        hour: '2-digit', minute: '2-digit', second: '2-digit' 
+                                                        hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Europe/Paris' 
                                                     })}
                                                 </span>
                                             </div>
@@ -134,7 +133,7 @@ export default function AuditPage() {
                                         {/* Utilisateur */}
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center gap-2">
-                                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-600 uppercase">
+                                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-600 uppercase">
                                                     {log.admin?.email ? log.admin.email.substring(0,2) : 'SY'}
                                                 </div>
                                                 <span className="font-medium">

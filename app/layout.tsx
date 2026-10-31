@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Geist } from "next/font/google";
 import "./globals.css";
 import SocketListener from "@/components/SocketListener"; // <-- Import du Listener WebSocket
 
-// Initialize the Inter font
-const inter = Inter({ subsets: ["latin"] });
+// Geist, the same font as the public site (see app/globals.css)
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "MaidMatch Admin",
@@ -18,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <body className={`${inter.className} bg-slate-50 text-slate-900`}>
+      <body className={`${geistSans.variable} font-sans bg-slate-50 text-slate-900`}>
         
         {/* Le contenu principal de ton application (pages, sidebar, etc.) */}
         {children}

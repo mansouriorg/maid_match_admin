@@ -21,7 +21,7 @@ interface Maid {
   languages: string[];
   status: string;
   isVerified: boolean;
-  requests?: any[]; // To calculate job count
+  requests?: unknown[]; // To calculate job count
   _count?: { requests: number };
 }
 
@@ -46,7 +46,7 @@ export default function StaffProfilePage({ params }: PageProps) {
       try {
         const response = await api.get(`/maids/${id}`);
         setStaff(response.data);
-      } catch (err: any) {
+      } catch (err) {
         console.error("Error fetching staff details:", err);
         setError("Impossible de charger le profil de cet intervenant.");
       } finally {
@@ -65,10 +65,10 @@ export default function StaffProfilePage({ params }: PageProps) {
   // --- LOADING STATE ---
   if (loading) {
     return (
-      <div className="flex min-h-screen bg-slate-50 font-sans">
+      <div className="flex min-h-screen flex-col lg:flex-row bg-slate-50 font-sans">
         <Sidebar />
-        <div className="ml-64 flex-1 flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+        <div className="lg:ml-64 flex-1 flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-teal-700" />
         </div>
       </div>
     );
@@ -77,13 +77,13 @@ export default function StaffProfilePage({ params }: PageProps) {
   // --- ERROR STATE ---
   if (error || !staff) {
     return (
-        <div className="flex min-h-screen bg-slate-50 font-sans">
+        <div className="flex min-h-screen flex-col lg:flex-row bg-slate-50 font-sans">
           <Sidebar />
-          <div className="ml-64 flex-1 flex flex-col items-center justify-center p-8 text-center">
+          <div className="lg:ml-64 flex-1 flex flex-col items-center justify-center p-8 text-center">
               <AlertCircle className="h-12 w-12 text-red-400 mb-4" />
               <h1 className="text-2xl font-bold mb-2 text-slate-900">Introuvable</h1>
               <p className="text-slate-500 mb-6">{error || "Cet intervenant n'existe pas."}</p>
-              <Link href="/staff" className="text-teal-600 hover:underline font-bold flex items-center gap-2">
+              <Link href="/staff" className="text-teal-700 hover:underline font-bold flex items-center gap-2">
                  <ArrowLeft className="h-4 w-4" /> Retour au catalogue
               </Link>
           </div>
@@ -92,13 +92,13 @@ export default function StaffProfilePage({ params }: PageProps) {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
+    <div className="flex min-h-screen flex-col lg:flex-row bg-slate-50 font-sans text-slate-900">
       <Sidebar />
-      <main className="ml-64 flex-1 p-8">
+      <main className="lg:ml-64 flex-1 p-4 sm:p-8">
         
         {/* Navigation Return */}
         <div className="mb-6">
-            <Link href="/staff" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-teal-600 transition-colors">
+            <Link href="/staff" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-teal-700 transition-colors">
                 <ArrowLeft className="h-4 w-4" />
                 Retour au catalogue
             </Link>
@@ -125,19 +125,20 @@ export default function StaffProfilePage({ params }: PageProps) {
                                     </span>
                                 )}
                             </h1>
-                            <p className="font-medium text-teal-600">{staff.specialty}</p>
+                            <p className="font-medium text-teal-700">{staff.specialty}</p>
                         </div>
                     </div>
                     
                     {/* Action Buttons */}
                     <div className="flex gap-3 mb-1">
-                        <button className="flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+                        {/* Hidden until CVs can be stored (there is no file upload yet). */}
+                        <button hidden type="button" className="flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 font-bold text-slate-600 hover:bg-slate-50 transition-colors">
                             <Download className="h-4 w-4" />
                             <span className="hidden sm:inline">Télécharger CV</span>
                         </button>
-                        <button className="rounded-lg bg-teal-600 px-4 py-2 font-bold text-white shadow-md hover:bg-teal-700 transition-colors">
+                        <a href={`tel:${staff.phoneNumber.replace(/\s/g, "")}`} className="rounded-lg bg-teal-700 px-4 py-2 font-bold text-white shadow-md hover:bg-teal-800 transition-colors">
                             Contacter
-                        </button>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -151,20 +152,20 @@ export default function StaffProfilePage({ params }: PageProps) {
                 {/* Contact Info */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h3 className="mb-4 font-bold text-slate-900 flex items-center gap-2">
-                        <User className="h-4 w-4 text-slate-400" />
+                        <User className="h-4 w-4 text-slate-500" />
                         Coordonnées
                     </h3>
                     <div className="space-y-4 text-sm">
                         <div className="flex items-center gap-3 text-slate-600">
-                            <MapPin className="h-4 w-4 text-teal-500" />
-                            Tunis, Tunisie {/* Placeholder for now */}
+                            <MapPin className="h-4 w-4 text-teal-600" />
+                            Localisation non renseign&eacute;e
                         </div>
                         <div className="flex items-center gap-3 text-slate-600">
-                            <Phone className="h-4 w-4 text-teal-500" />
+                            <Phone className="h-4 w-4 text-teal-600" />
                             {staff.phoneNumber}
                         </div>
                         <div className="flex items-center gap-3 text-slate-600">
-                            <Mail className="h-4 w-4 text-teal-500" />
+                            <Mail className="h-4 w-4 text-teal-600" />
                             {/* Placeholder email generator based on name */}
                             {staff.fullName.split(' ')[0].toLowerCase()}@maidmatch.com
                         </div>
@@ -228,7 +229,7 @@ export default function StaffProfilePage({ params }: PageProps) {
                     <div className="flex flex-wrap gap-3">
                         {/* Render Specialty as main skill */}
                         <div className="flex items-center gap-2 rounded-lg bg-teal-50 border border-teal-100 px-4 py-2 text-teal-800 font-medium capitalize">
-                            <CheckCircle2 className="h-4 w-4 text-teal-600" />
+                            <CheckCircle2 className="h-4 w-4 text-teal-700" />
                             {staff.specialty}
                         </div>
                         {/* Since we don't store extra skills separately yet, we can re-list languages or static placeholders */}
@@ -245,12 +246,12 @@ export default function StaffProfilePage({ params }: PageProps) {
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm opacity-80">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-bold text-slate-900">Disponibilités (Simulé)</h3>
-                        <CalendarCheck className="h-5 w-5 text-slate-400" />
+                        <CalendarCheck className="h-5 w-5 text-slate-500" />
                     </div>
                     <div className="grid grid-cols-7 gap-2 text-center">
                         {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day, i) => (
                             <div key={day} className={`rounded-lg p-3 text-sm font-bold border ${
-                                i === 6 ? 'bg-slate-50 text-slate-400 border-slate-100' : 
+                                i === 6 ? 'bg-slate-50 text-slate-500 border-slate-100' : 
                                 staff.status === 'BUSY' ? 'bg-orange-50 text-orange-700 border-orange-100' :
                                 'bg-white text-slate-700 border-teal-200'
                             }`}>

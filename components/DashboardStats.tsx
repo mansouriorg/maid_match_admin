@@ -8,7 +8,6 @@ import {
   CalendarDays, 
   CheckCircle2, 
   Clock,
-  Loader2,
   AlertCircle
 } from "lucide-react";
 
@@ -70,8 +69,8 @@ export default function DashboardStats() {
     {
       // --- CARTE MISE À JOUR POUR LA FACTURATION ---
       title: "Revenus Encaissés",
-      value: `${stats.collectedRevenue?.toLocaleString() || 0} TND`, 
-      subtitle: `Sur ${stats.estimatedRevenue?.toLocaleString() || 0} TND prévus`,
+      value: `${stats.collectedRevenue?.toLocaleString("fr-FR") || 0} \u20ac`, 
+      subtitle: `Sur ${stats.estimatedRevenue?.toLocaleString("fr-FR") || 0} \u20ac prévus`,
       icon: TrendingUp,
       color: "bg-emerald-500",
       lightColor: "bg-emerald-100 text-emerald-600",
@@ -122,7 +121,7 @@ export default function DashboardStats() {
                 <Icon className="h-6 w-6" />
               </div>
             </div>
-            <p className="mt-4 text-xs font-medium text-slate-400">
+            <p className="mt-4 text-xs font-medium text-slate-500">
               {stat.subtitle}
             </p>
           </div>

@@ -1,5 +1,27 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Admin login
+
+The login page (`app/page.tsx`) calls `POST /auth/login` on the API set in `NEXT_PUBLIC_API_URL`.
+The API answers `{ "access_token": "..." }`. The token is kept in local storage and in a cookie
+named `adminToken`, and `lib/api.ts` sends it as `Authorization: Bearer <token>` on every call.
+
+- `proxy.ts` only checks that the cookie looks like a JWT that has not expired. It is a convenience
+  that sends visitors to the login page. It cannot check the signature, so the API must refuse
+  requests without a valid token.
+- When the API answers 401 "Unauthorized", the session is cleared and the login page is shown.
+
+## Times
+
+Every booking time is shown and typed in Paris time (Europe/Paris), wherever the
+admin is. The API stores times in UTC. The conversions are in `lib/time.ts`.
+
+## Live notifications
+
+The admin opens a Socket.IO connection to the API only while a session is valid
+(`lib/socket.ts`, `components/SocketListener.tsx`). It sends the login token when it
+connects, and the API refuses a socket without a valid token.
+
 ## Getting Started
 
 First, run the development server:

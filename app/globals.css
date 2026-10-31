@@ -1,26 +1,62 @@
 @import "tailwindcss";
 
+/*
+  Design foundation, shared by every page of the admin dashboard.
+
+  - Light theme only. The pages are designed for a light background. The old
+    rule that switched to a dark background on computers set to dark mode made
+    some text light gray on white, so it is gone.
+  - One font: Geist, loaded in app/layout.tsx, on every page.
+  - A visible keyboard focus ring and reduced motion (rules at the end).
+*/
+
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0f172a;
+  color-scheme: light;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-geist-sans, ui-sans-serif), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono, ui-monospace), monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans, ui-sans-serif), system-ui, sans-serif;
+}
+
+/*
+  Keyboard focus: a clear ring on every link, button and field, shown only when
+  the keyboard is used (not on mouse clicks). These rules are outside the
+  Tailwind layers on purpose, so they win over classes such as outline-none.
+*/
+:focus-visible {
+  outline: 2px solid #0f766e;
+  outline-offset: 2px;
+}
+
+/*
+  Color rules (update 18), so that new code stays readable:
+  - Brand color: teal only (no cyan, no indigo). Text and buttons use teal-700,
+    with teal-800 on hover. Icons may use teal-600. Lighter teals are only for
+    backgrounds, borders and decoration.
+  - Gray text on a light background: slate-500 or darker. slate-400 is only for
+    text on a dark background (it is 2.6:1 on white, 6.8:1 on slate-900).
+  - No text smaller than 12 px (text-xs).
+*/
+
+/* People who ask their system for less motion get no animations. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+    scroll-behavior: auto;
+  }
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import Sidebar from "@/components/Sidebar";
-import { api } from "@/lib/api"; 
+import { api } from "@/lib/api";
+import toast from "react-hot-toast"; 
 import { useEffect, useState } from "react";
 import { 
   User, 
@@ -82,12 +83,24 @@ export default function SettingsPage() {
     setIsSaving(true);
     try {
       // A. Sauvegarde des paramètres classiques
-      await api.patch("/settings", formData);
+      await api.patch("/settings", {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        companyName: formData.companyName,
+        contactPhone: formData.contactPhone,
+        defaultHourlyRate:
+          formData.defaultHourlyRate === ""
+            ? undefined
+            : Number(formData.defaultHourlyRate),
+        emailAlerts: formData.emailAlerts,
+        smsAlerts: formData.smsAlerts,
+      });
 
       // B. Si l'utilisateur essaie de changer son mot de passe
       if (passwordData.newPassword) {
         if (passwordData.newPassword !== passwordData.confirmPassword) {
-          alert("Les mots de passe ne correspondent pas !");
+          toast.error("Les mots de passe ne correspondent pas !");
           setIsSaving(false);
           return;
         }
@@ -104,13 +117,17 @@ export default function SettingsPage() {
 
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000); 
-    } catch (error: any) {
+    } catch (caught) {
+      const error = caught as {
+        message?: string;
+        response?: { status?: number; data?: { message?: string } };
+      };
       console.error("Erreur lors de la sauvegarde:", error);
       // Afficher l'erreur renvoyée par le backend (ex: mauvais mot de passe actuel)
       if (error.response?.data?.message) {
-        alert(error.response.data.message);
+        toast.error(error.response.data.message);
       } else {
-        alert("Une erreur est survenue lors de la sauvegarde.");
+        toast.error("Une erreur est survenue lors de la sauvegarde.");
       }
     } finally {
       setIsSaving(false);
@@ -124,28 +141,28 @@ export default function SettingsPage() {
     { id: "security", label: "Sécurité", icon: Shield, desc: "Mots de passe et accès" },
   ];
 
-  const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-4 focus:ring-teal-500/10 placeholder:text-slate-400";
+  const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-4 focus:ring-teal-500/10 placeholder:text-slate-500";
   const labelClass = "text-sm font-semibold text-slate-700 mb-1.5 block";
 
   // Écran de chargement esthétique en attendant les données
   if (isLoadingInitialData) {
     return (
-      <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
+      <div className="flex min-h-screen flex-col lg:flex-row bg-slate-50 font-sans text-slate-900">
         <Sidebar />
         <main className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-10 w-10 animate-spin text-teal-600" />
+          <Loader2 className="h-10 w-10 animate-spin text-teal-700" />
         </main>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
+    <div className="flex min-h-screen flex-col lg:flex-row bg-slate-50 font-sans text-slate-900">
       <Sidebar />
       
-      <main className="ml-64 flex-1">
+      <main className="lg:ml-64 flex-1">
         {/* Top Header */}
-        <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-slate-200 bg-white/80 px-8 backdrop-blur-md">
+        <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-slate-200 bg-white/80 px-4 sm:px-8 backdrop-blur-md">
           <h1 className="text-2xl font-bold tracking-tight text-slate-800">Paramètres</h1>
           
           <div className="flex items-center gap-4">
@@ -157,7 +174,7 @@ export default function SettingsPage() {
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="flex items-center gap-2 rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-teal-700 hover:shadow disabled:opacity-70"
+              className="flex items-center gap-2 rounded-xl bg-teal-700 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-teal-800 hover:shadow disabled:opacity-70"
             >
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Enregistrer
@@ -179,6 +196,7 @@ export default function SettingsPage() {
                   return (
                     <button
                       key={tab.id}
+                      aria-pressed={isActive}
                       onClick={() => setActiveTab(tab.id)}
                       className={`group flex items-center justify-between rounded-xl px-4 py-3 text-left transition-all ${
                         isActive 
@@ -187,7 +205,7 @@ export default function SettingsPage() {
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${isActive ? 'bg-teal-50 text-teal-600' : 'bg-transparent text-slate-400 group-hover:text-slate-600'}`}>
+                        <div className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${isActive ? 'bg-teal-50 text-teal-700' : 'bg-transparent text-slate-500 group-hover:text-slate-600'}`}>
                           <Icon className="h-5 w-5" />
                         </div>
                         <div>
@@ -224,9 +242,10 @@ export default function SettingsPage() {
                     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
                       <div className="grid grid-cols-2 gap-5">
                         <div>
-                          <label className={labelClass}>Prénom</label>
+                          <label htmlFor="settings-firstName" className={labelClass}>Prénom</label>
                           <input 
                             type="text" 
+                            id="settings-firstName"
                             name="firstName"
                             value={formData.firstName}
                             onChange={handleInputChange}
@@ -234,9 +253,10 @@ export default function SettingsPage() {
                           />
                         </div>
                         <div>
-                          <label className={labelClass}>Nom</label>
+                          <label htmlFor="settings-lastName" className={labelClass}>Nom</label>
                           <input 
                             type="text" 
+                            id="settings-lastName"
                             name="lastName"
                             value={formData.lastName}
                             onChange={handleInputChange}
@@ -244,9 +264,10 @@ export default function SettingsPage() {
                           />
                         </div>
                         <div className="col-span-2">
-                          <label className={labelClass}>Adresse Email</label>
+                          <label htmlFor="settings-email" className={labelClass}>Adresse Email</label>
                           <input 
                             type="email" 
+                            id="settings-email"
                             name="email"
                             value={formData.email}
                             onChange={handleInputChange}
@@ -261,9 +282,10 @@ export default function SettingsPage() {
                   {activeTab === "company" && (
                     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
                       <div>
-                        <label className={labelClass}>Nom de l'Entreprise</label>
+                        <label htmlFor="settings-companyName" className={labelClass}>Nom de l&rsquo;Entreprise</label>
                         <input 
                           type="text" 
+                          id="settings-companyName"
                           name="companyName"
                           value={formData.companyName}
                           onChange={handleInputChange}
@@ -271,9 +293,10 @@ export default function SettingsPage() {
                         />
                       </div>
                       <div>
-                        <label className={labelClass}>Téléphone de Contact</label>
+                        <label htmlFor="settings-contactPhone" className={labelClass}>Téléphone de Contact</label>
                         <input 
                           type="text" 
+                          id="settings-contactPhone"
                           name="contactPhone"
                           value={formData.contactPhone}
                           onChange={handleInputChange}
@@ -281,19 +304,20 @@ export default function SettingsPage() {
                         />
                       </div>
                       <div>
-                        <label className={`${labelClass} flex justify-between items-center`}>
+                        <label htmlFor="settings-defaultHourlyRate" className={`${labelClass} flex justify-between items-center`}>
                           Tarif Horaire de Base
-                          <span className="text-xs font-normal text-slate-400">Calcul des devis (TND)</span>
+                          <span className="text-xs font-normal text-slate-500">Calcul des devis (&euro;)</span>
                         </label>
                         <div className="relative">
                           <input 
                             type="number" 
+                            id="settings-defaultHourlyRate"
                             name="defaultHourlyRate"
                             value={formData.defaultHourlyRate}
                             onChange={handleInputChange}
                             className={`${inputClass} pl-12`}
                           />
-                          <span className="absolute left-4 top-[11px] font-medium text-slate-400">TND</span>
+                          <span className="absolute left-4 top-[11px] font-medium text-slate-500">&euro;</span>
                         </div>
                       </div>
                     </div>
@@ -332,9 +356,10 @@ export default function SettingsPage() {
                   {activeTab === "security" && (
                     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
                       <div>
-                        <label className={labelClass}>Mot de passe actuel</label>
+                        <label htmlFor="settings-currentPassword" className={labelClass}>Mot de passe actuel</label>
                         <input 
                           type="password" 
+                          id="settings-currentPassword"
                           name="currentPassword"
                           value={passwordData.currentPassword}
                           onChange={handlePasswordChange}
@@ -344,9 +369,10 @@ export default function SettingsPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-5">
                         <div>
-                          <label className={labelClass}>Nouveau mot de passe</label>
+                          <label htmlFor="settings-newPassword" className={labelClass}>Nouveau mot de passe</label>
                           <input 
                             type="password" 
+                            id="settings-newPassword"
                             name="newPassword"
                             value={passwordData.newPassword}
                             onChange={handlePasswordChange}
@@ -355,9 +381,10 @@ export default function SettingsPage() {
                           />
                         </div>
                         <div>
-                          <label className={labelClass}>Confirmer le mot de passe</label>
+                          <label htmlFor="settings-confirmPassword" className={labelClass}>Confirmer le mot de passe</label>
                           <input 
                             type="password" 
+                            id="settings-confirmPassword"
                             name="confirmPassword"
                             value={passwordData.confirmPassword}
                             onChange={handlePasswordChange}

@@ -14,7 +14,7 @@ interface Maid {
   status: string;         // "AVAILABLE", "BUSY"
   rating: number;
   languages: string[];
-  requests?: any[];       // To count jobs completed
+  requests?: unknown[];       // To count jobs completed
   _count?: {
     requests: number;     // If you used the count in Prisma
   };
@@ -77,18 +77,18 @@ export default function StaffCatalogPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
+    <div className="flex min-h-screen flex-col lg:flex-row bg-slate-50 font-sans text-slate-900">
       <Sidebar />
-      <main className="ml-64 flex-1 p-8">
+      <main className="lg:ml-64 flex-1 p-4 sm:p-8">
         
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
             <div>
                 <h1 className="text-2xl font-bold text-slate-900">Catalogue Intervenants</h1>
                 <p className="text-slate-500">Gérez votre équipe et consultez leurs compétences.</p>
             </div>
             <Link href="/staff/new">
-                <button className="flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-teal-200 hover:bg-teal-700 transition-all hover:-translate-y-0.5">
+                <button className="flex items-center gap-2 rounded-lg bg-teal-700 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-teal-200 hover:bg-teal-800 transition-all hover:-translate-y-0.5">
                     <Plus className="h-4 w-4" />
                     Ajouter un profil
                 </button>
@@ -98,15 +98,17 @@ export default function StaffCatalogPage() {
         {/* Search & Filter Bar */}
         <div className="mb-8 flex gap-4">
             <div className="relative flex-1">
-                <Search className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+                <Search className="absolute left-3 top-3 h-5 w-5 text-slate-500" />
                 <input 
+                    aria-label="Rechercher un intervenant"
                     placeholder="Rechercher par nom, compétence, langue..." 
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 transition-all"
                 />
             </div>
-            <button className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+            {/* Hidden until filters exist. The search box already searches by name, skill and language. */}
+            <button hidden type="button" className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 font-medium text-slate-600 hover:bg-slate-50 transition-colors">
                 <Filter className="h-4 w-4" />
                 Filtres
             </button>
@@ -115,7 +117,7 @@ export default function StaffCatalogPage() {
         {/* LOADING STATE */}
         {loading && (
             <div className="flex h-64 w-full items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+                <Loader2 className="h-8 w-8 animate-spin text-teal-700" />
             </div>
         )}
 
@@ -129,7 +131,7 @@ export default function StaffCatalogPage() {
 
         {/* EMPTY STATE */}
         {!loading && filteredMaids.length === 0 && !error && (
-            <div className="flex h-64 flex-col items-center justify-center text-slate-400">
+            <div className="flex h-64 flex-col items-center justify-center text-slate-500">
                 <Search className="mb-2 h-10 w-10 opacity-20" />
                 <p>Aucun intervenant trouvé.</p>
             </div>
@@ -143,7 +145,7 @@ export default function StaffCatalogPage() {
                     {/* Card Header: Avatar & Status */}
                     <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-4">
-                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-xl font-bold text-slate-600 group-hover:bg-teal-50 group-hover:text-teal-600 transition-colors">
+                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-xl font-bold text-slate-600 group-hover:bg-teal-50 group-hover:text-teal-700 transition-colors">
                                 {getInitials(person.fullName)}
                             </div>
                             <div>
@@ -162,14 +164,14 @@ export default function StaffCatalogPage() {
                         </div>
                         <div className="h-4 w-px bg-slate-200" />
                         <div className="flex items-center gap-1.5 text-sm font-medium text-slate-600">
-                            <Briefcase className="h-4 w-4 text-slate-400" />
+                            <Briefcase className="h-4 w-4 text-slate-500" />
                             {/* Use _count if available, otherwise array length, otherwise 0 */}
                             {person._count?.requests ?? person.requests?.length ?? 0} <span className="hidden sm:inline">Missions</span>
                         </div>
                         <div className="h-4 w-px bg-slate-200" />
                         <div className="flex items-center gap-1.5 text-sm font-medium text-slate-600 truncate max-w-[80px]">
-                            <MapPin className="h-4 w-4 text-slate-400" />
-                            Tunis {/* Default location until added to DB */}
+                            <MapPin className="h-4 w-4 text-slate-500" />
+                            &mdash;
                         </div>
                     </div>
 
@@ -181,7 +183,7 @@ export default function StaffCatalogPage() {
                             </span>
                         ))}
                         {(!person.languages || person.languages.length === 0) && (
-                            <span className="text-xs text-slate-400 italic">Aucune langue spécifiée</span>
+                            <span className="text-xs text-slate-500 italic">Aucune langue spécifiée</span>
                         )}
                     </div>
 

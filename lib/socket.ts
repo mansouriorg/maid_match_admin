@@ -1,11 +1,25 @@
-// src/lib/socket.ts
 import { io } from "socket.io-client";
+import { getToken } from "@/lib/auth";
 
-// Remplace par l'URL de ton backend NestJS si elle est différente
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
-// autoConnect: false permet de ne se connecter que lorsque l'admin est sur le dashboard
+// The socket is opened only while an admin is logged in (see SocketListener).
+// The login token is sent each time it connects, and the server refuses a
+// socket without a valid token.
 export const socket = io(BACKEND_URL, {
-  autoConnect: false, 
-  withCredentials: true, // <-- La correction est ici ("withCredentials" au lieu de "credentials")
+  autoConnect: false,
+  auth: (callback) => {
+    callback({ token: getToken() });
+  },
 });
+
+// Connects when there is a session and disconnects when there is none.
+export function syncSocketWithSession(token: string | null) {
+  if (token) {
+    if (socket.connected === false) {
+      socket.connect();
+    }
+  } else if (socket.connected) {
+    socket.disconnect();
+  }
+}

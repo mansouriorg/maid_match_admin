@@ -43,7 +43,7 @@ export default function NewStaffPage() {
       // Redirect to catalog on success
       router.push("/staff");
       router.refresh(); // Refresh to show new data
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error creating staff:", err);
       setError("Erreur lors de la création. Vérifiez que le numéro n'existe pas déjà.");
     } finally {
@@ -52,13 +52,13 @@ export default function NewStaffPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
+    <div className="flex min-h-screen flex-col lg:flex-row bg-slate-50 font-sans text-slate-900">
       <Sidebar />
-      <main className="ml-64 flex-1 p-8">
+      <main className="lg:ml-64 flex-1 p-4 sm:p-8">
         
         {/* Header */}
         <div className="mb-8 flex items-center gap-4">
-            <Link href="/staff" className="rounded-full bg-white p-2 text-slate-400 hover:text-teal-600 shadow-sm transition-colors">
+            <Link href="/staff" className="rounded-full bg-white p-2 text-slate-500 hover:text-teal-700 shadow-sm transition-colors">
                 <ArrowLeft className="h-5 w-5" />
             </Link>
             <div>
@@ -79,14 +79,15 @@ export default function NewStaffPage() {
             {/* Section 1: Identity */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h3 className="mb-4 text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <User className="h-5 w-5 text-teal-600" /> Identité
+                    <User className="h-5 w-5 text-teal-700" /> Identité
                 </h3>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-semibold text-slate-600">Nom Complet</label>
+                        <label htmlFor="staff-fullName" className="text-sm font-semibold text-slate-600">Nom Complet</label>
                         <input 
                             required
                             type="text"
+                            id="staff-fullName"
                             placeholder="ex: Fatma Ben Ali"
                             value={formData.fullName}
                             onChange={e => setFormData({...formData, fullName: e.target.value})}
@@ -94,13 +95,14 @@ export default function NewStaffPage() {
                         />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-semibold text-slate-600">Téléphone</label>
+                        <label htmlFor="staff-phone" className="text-sm font-semibold text-slate-600">Téléphone</label>
                         <div className="relative">
-                            <Phone className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                            <Phone className="absolute left-3 top-2.5 h-5 w-5 text-slate-500" />
                             <input 
                                 required
                                 type="tel"
-                                placeholder="ex: 20 123 456"
+                                id="staff-phone"
+                                placeholder="ex: 06 12 34 56 78"
                                 value={formData.phoneNumber}
                                 onChange={e => setFormData({...formData, phoneNumber: e.target.value})}
                                 className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 py-2.5 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 transition-all"
@@ -113,12 +115,13 @@ export default function NewStaffPage() {
             {/* Section 2: Skills */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h3 className="mb-4 text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <Briefcase className="h-5 w-5 text-teal-600" /> Compétences
+                    <Briefcase className="h-5 w-5 text-teal-700" /> Compétences
                 </h3>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-semibold text-slate-600">Spécialité Principale</label>
+                        <label htmlFor="staff-specialty" className="text-sm font-semibold text-slate-600">Spécialité Principale</label>
                         <select 
+                            id="staff-specialty"
                             value={formData.specialty}
                             onChange={e => setFormData({...formData, specialty: e.target.value})}
                             className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 transition-all appearance-none"
@@ -127,17 +130,18 @@ export default function NewStaffPage() {
                             <option value="Grand Ménage (Deep Clean)">Grand Ménage (Deep Clean)</option>
                             <option value="Repassage Expert">Repassage Expert</option>
                             <option value="Cuisine">Cuisine</option>
-                            <option value="Garde d'enfants">Garde d'enfants</option>
+                            <option value="Garde d'enfants">Garde d&rsquo;enfants</option>
                         </select>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-semibold text-slate-600">Années d'Expérience</label>
+                        <label htmlFor="staff-experience" className="text-sm font-semibold text-slate-600">Années d&rsquo;Expérience</label>
                         <div className="relative">
-                            <Star className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
+                            <Star className="absolute left-3 top-2.5 h-5 w-5 text-slate-500" />
                             <input 
                                 type="number"
                                 min="0"
                                 max="40"
+                                id="staff-experience"
                                 value={formData.experienceYears}
                                 onChange={e => setFormData({...formData, experienceYears: parseInt(e.target.value) || 0})}
                                 className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 py-2.5 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 transition-all"
@@ -155,6 +159,7 @@ export default function NewStaffPage() {
                             <button
                                 key={lang}
                                 type="button"
+                                aria-pressed={formData.languages.includes(lang)}
                                 onClick={() => toggleLanguage(lang)}
                                 className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
                                     formData.languages.includes(lang)
@@ -169,9 +174,10 @@ export default function NewStaffPage() {
                 </div>
 
                 <div className="mt-6 space-y-1.5">
-                    <label className="text-sm font-semibold text-slate-600">Bio / Description (Optionnel)</label>
+                    <label htmlFor="staff-bio" className="text-sm font-semibold text-slate-600">Bio / Description (Optionnel)</label>
                     <textarea 
                         rows={3}
+                        id="staff-bio"
                         placeholder="Petite note sur le profil..."
                         value={formData.bio}
                         onChange={e => setFormData({...formData, bio: e.target.value})}
@@ -190,7 +196,7 @@ export default function NewStaffPage() {
                 <button 
                     type="submit" 
                     disabled={isSubmitting}
-                    className="flex items-center gap-2 rounded-xl bg-teal-600 px-8 py-3 font-bold text-white shadow-lg shadow-teal-200 hover:bg-teal-700 transition-all hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 rounded-xl bg-teal-700 px-8 py-3 font-bold text-white shadow-lg shadow-teal-200 hover:bg-teal-800 transition-all hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                     {isSubmitting ? (
                         <>
