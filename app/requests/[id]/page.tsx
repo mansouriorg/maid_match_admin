@@ -102,6 +102,9 @@ export default function RequestDetailsPage({ params }: PageProps) {
     
     try {
         const res = await api.patch(`/service-requests/${id}/status`, { status: newStatus });
+        if (res.data?.nextRequestId) {
+          toast.success(`Intervention suivante cr\u00e9\u00e9e (demande #${res.data.nextRequestId}).`);
+        }
         setRequest(res.data); 
     } catch {
         toast.error("Erreur lors de la mise à jour du statut.");
@@ -371,7 +374,7 @@ export default function RequestDetailsPage({ params }: PageProps) {
                                 </span>
                             </div>
                             <div>
-                                <p className="font-bold text-slate-900">Date d&rsquo;intervention prévue</p>
+                                <p className="font-bold text-slate-900">Date d&rsquo;intervention prévue{(request.frequency === "weekly" || request.frequency === "bi-weekly") && (<span className="ml-2 rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-800">{request.frequency === "weekly" ? "Chaque semaine" : "Toutes les 2 semaines"}</span>)}</p>
                                 <p className="text-sm font-medium text-slate-600 flex items-center gap-1.5 mt-0.5">
                                     <Clock className="h-3.5 w-3.5 text-teal-600" />
                                     {startDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} - 
