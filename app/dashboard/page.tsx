@@ -47,6 +47,7 @@ export default function AdminDashboard() {
 
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
   // FETCH DATA & LISTEN TO SOCKET
   useEffect(() => {
@@ -91,6 +92,16 @@ export default function AdminDashboard() {
       socket.off("new-intervention", handleNewIntervention);
     };
   }, []); 
+
+  // Search by customer name, phone or address (accents, case and spaces ignored)
+  const compact = (text: string) =>
+    text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, "");
+  const query = compact(search);
+  const shownRequests = query === ""
+    ? requests
+    : requests.filter((req) =>
+        [req.customerName, req.customerPhone, req.address].some((field) => compact(field).includes(query)),
+      );
 
   // --- Logique des notifications ---
   const unreadCount = notifications.filter(n => !n.isRead).length;
@@ -176,11 +187,14 @@ export default function AdminDashboard() {
           <h1 className="text-2xl font-bold text-slate-800">Tableau de Bord</h1>
           <div className="flex items-center gap-4">
             <div className="relative">
-              {/* The search box is hidden until it is connected to the list below. */}
-              <Search className="absolute left-3 top-3 hidden h-4 w-4 text-slate-500" />
+              {/* Searches the bookings below by name, phone or address. */}
+              <Search className="absolute left-3 top-3 h-4 w-4 text-slate-500" aria-hidden="true" />
               <input 
-                hidden
-                placeholder="Rechercher un client..." 
+                type="search"
+                aria-label="Rechercher une r&eacute;servation"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Nom, t&eacute;l&eacute;phone, adresse..." 
                 className="h-10 w-36 sm:w-64 rounded-full border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
               />
             </div>
@@ -269,7 +283,7 @@ export default function AdminDashboard() {
           {/* Requests List */}
           <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-              <h2 className="font-bold text-lg text-slate-800">Dernières réservations</h2>
+              <h2 className="font-bold text-lg text-slate-800">Dernières réservations{query !== "" && (<span className="ml-2 text-sm font-normal text-slate-500">{shownRequests.length} r&eacute;sultat(s)</span>)}</h2>
               <Link href="/requests" className="text-sm font-medium text-teal-700 hover:text-teal-700">Tout voir</Link>
             </div>
             
@@ -277,13 +291,13 @@ export default function AdminDashboard() {
                 <div className="flex h-40 items-center justify-center">
                     <Loader2 className="h-8 w-8 animate-spin text-teal-700" />
                 </div>
-            ) : requests.length === 0 ? (
+            ) : shownRequests.length === 0 ? (
                 <div className="flex h-40 items-center justify-center text-slate-500">
                     Aucune réservation trouvée.
                 </div>
             ) : (
                 <div className="divide-y divide-slate-100">
-                {requests.map((req) => (
+                {shownRequests.map((req) => (
                     <Link 
                         href={`/requests/${req.id}`} 
                         key={req.id} 

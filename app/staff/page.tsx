@@ -13,6 +13,7 @@ interface Maid {
   specialty: string;
   status: string;         // "AVAILABLE", "BUSY"
   rating: number;
+  isVerified?: boolean;
   languages: string[];
   requests?: unknown[];       // To count jobs completed
   _count?: {
@@ -25,6 +26,9 @@ export default function StaffCatalogPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [specialtyFilter, setSpecialtyFilter] = useState("ALL");
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
 
   // 1. FETCH DATA ON MOUNT
   useEffect(() => {
@@ -48,7 +52,15 @@ export default function StaffCatalogPage() {
     maid.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     maid.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (maid.languages && maid.languages.some(lang => lang.toLowerCase().includes(searchTerm.toLowerCase())))
+  ).filter(maid =>
+    (statusFilter === "ALL" || maid.status === statusFilter) &&
+    (specialtyFilter === "ALL" || maid.specialty === specialtyFilter) &&
+    (verifiedOnly === false || maid.isVerified === true)
   );
+
+  // The specialties present in the team, for the filter list
+  const specialties = Array.from(new Set(maids.map(maid => maid.specialty))).sort((a, b) => a.localeCompare(b, "fr"));
+  const filtersActive = statusFilter !== "ALL" || specialtyFilter !== "ALL" || verifiedOnly;
 
   // 3. HELPER: Status Badge Styling
   const getStatusBadge = (status: string) => {
@@ -98,7 +110,7 @@ export default function StaffCatalogPage() {
         </div>
 
         {/* Search & Filter Bar */}
-        <div className="mb-8 flex gap-4">
+        <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center">
             <div className="relative flex-1">
                 <Search className="absolute left-3 top-3 h-5 w-5 text-slate-500" />
                 <input 
@@ -109,11 +121,49 @@ export default function StaffCatalogPage() {
                     className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 transition-all"
                 />
             </div>
-            {/* Hidden until filters exist. The search box already searches by name, skill and language. */}
-            <button hidden type="button" className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 font-medium text-slate-600 hover:bg-slate-50 transition-colors">
-                <Filter className="h-4 w-4" />
-                Filtres
-            </button>
+            {/* Filters: status, specialty, verified profiles */}
+            <div className="flex flex-wrap items-center gap-2">
+                <Filter className="h-4 w-4 text-slate-500" aria-hidden="true" />
+                <select
+                    aria-label="Filtrer par statut"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+                >
+                    <option value="ALL">Tous les statuts</option>
+                    <option value="AVAILABLE">Disponible</option>
+                    <option value="ON_LEAVE">En cong&eacute;</option>
+                </select>
+                <select
+                    aria-label="Filtrer par sp&eacute;cialit&eacute;"
+                    value={specialtyFilter}
+                    onChange={(e) => setSpecialtyFilter(e.target.value)}
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+                >
+                    <option value="ALL">Toutes les sp&eacute;cialit&eacute;s</option>
+                    {specialties.map(specialty => (
+                        <option key={specialty} value={specialty}>{specialty}</option>
+                    ))}
+                </select>
+                <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700">
+                    <input
+                        type="checkbox"
+                        checked={verifiedOnly}
+                        onChange={(e) => setVerifiedOnly(e.target.checked)}
+                        className="h-4 w-4 accent-teal-700"
+                    />
+                    V&eacute;rifi&eacute;s uniquement
+                </label>
+                {filtersActive && (
+                    <button
+                        type="button"
+                        onClick={() => { setStatusFilter("ALL"); setSpecialtyFilter("ALL"); setVerifiedOnly(false); }}
+                        className="px-2 py-2.5 text-sm font-medium text-teal-700 hover:underline"
+                    >
+                        Effacer les filtres
+                    </button>
+                )}
+            </div>
         </div>
 
         {/* LOADING STATE */}
